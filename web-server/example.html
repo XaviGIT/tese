@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Page Test</title>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  </head>
+  <body>
+    <h1>Testing</h1>
+    <p contenteditable="true">This is a webpage used for testing purposes</p>
+    <form>
+      <div id="trigger1">Div with click added by addEventListener</div>
+      <div id="trigger2">Div with click added by jQuery click</div>
+      <div id="trigger3" onclick="customClick('div onclick')">Div with click added by onclick</div>
+      <button onclick="customClick('button onclick')">Button with click added by onclick</button>
+    </form>
+
+    <script type="text/javascript">
+      // const _addEventListener = EventTarget.prototype.addEventListener;
+      // const _removeEventListener = EventTarget.prototype.removeEventListener;
+      // EventTarget.prototype.events = {};
+      // EventTarget.prototype.addEventListener = function (name, listener, etc) {
+      //   let events = EventTarget.prototype.events;
+      //   if (events[name] == null) {
+      //     events[name] = [];
+      //   }
+
+      //   if (events[name].indexOf(listener) == -1) {
+      //     events[name].push(listener);
+      //   }
+
+      //   _addEventListener(name, listener);
+      // };
+      // EventTarget.prototype.removeEventListener = function (name, listener) {
+      //   let events = EventTarget.prototype.events;
+
+      //   if (events[name] != null && events[name].indexOf(listener) != -1) {
+      //     events[name].splice(events[name].indexOf(listener), 1);
+      //   }
+
+      //   _removeEventListener(name, listener);
+      // };
+      // EventTarget.prototype.hasEventListener = function (name) {
+      //   let events = EventTarget.prototype.events;
+      //   if (events[name] == null) {
+      //     return false;
+      //   }
+
+      //   //return events[name].length;
+      //   return true;
+      // };
+
+      run = () => {
+        const trigger = document.body.querySelector("#trigger1");
+        trigger.addEventListener("click", () => {
+          console.log("div addEventListener");
+        });
+
+        $("#trigger2").click(() => {
+          console.log("div jQuery click");
+        });
+
+        // console.log(`teste: ${trigger.hasEventListener("click")}`);
+      };
+
+      customClick = (msg) => {
+        console.log(msg);
+      };
+
+      window.onload = run;
+    </script>
+  </body>
+</html>

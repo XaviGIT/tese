@@ -1,0 +1,15 @@
+{
+  "name": "pwa-accessibility-evaluator",
+  "version": "1.0.0",
+  "description": "Evaluator of web pages Accessibility for PWA's.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Paulo Vieira",
+  "license": "ISC",
+  "dependencies": {
+    "puppeteer": "^5.5.0"
+  }
+}
