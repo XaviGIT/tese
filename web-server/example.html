@@ -11,18 +11,24 @@
       <div id="trigger1">Div with click added by addEventListener</div>
       <div id="trigger2">Div with click added by jQuery click</div>
       <div id="trigger3" onclick="customClick('div onclick')">Div with click added by onclick</div>
+      <div class="trigger4">Div with click added by addEventListener using class</div>
       <button onclick="customClick('button onclick')">Button with click added by onclick</button>
     </form>
 
     <script type="text/javascript">
       run = () => {
-        const trigger = document.body.querySelector("#trigger1");
-        trigger.addEventListener("click", () => {
+        const trigger1 = document.body.querySelector("#trigger1");
+        trigger1.addEventListener("click", () => {
           console.log("div addEventListener");
         });
 
         $("#trigger2").click(() => {
           console.log("div jQuery click");
+        });
+
+        const trigger4 = document.body.querySelector(".trigger4");
+        trigger4.addEventListener("click", () => {
+          console.log("div addEventListener with class");
         });
       };
 
