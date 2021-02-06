@@ -1,8 +1,8 @@
-const _addEventListener = EventTarget.prototype.addEventListener;
-const _removeEventListener = EventTarget.prototype.removeEventListener;
+var _addEventListener = EventTarget.prototype.addEventListener;
+var _removeEventListener = EventTarget.prototype.removeEventListener;
 EventTarget.prototype.events = {};
 EventTarget.prototype.addEventListener = function(name, listener, etc) {
-  let events = EventTarget.prototype.events;
+  var events = EventTarget.prototype.events;
   if (events[name] == null) {
     events[name] = [];
   }
@@ -14,7 +14,7 @@ EventTarget.prototype.addEventListener = function(name, listener, etc) {
   _addEventListener(name, listener);
 };
 EventTarget.prototype.removeEventListener = function(name, listener) {
-  let events = EventTarget.prototype.events;
+  var events = EventTarget.prototype.events;
 
   if (events[name] != null && events[name].indexOf(listener) != -1) {
     events[name].splice(events[name].indexOf(listener), 1);
@@ -22,11 +22,11 @@ EventTarget.prototype.removeEventListener = function(name, listener) {
 
   _removeEventListener(name, listener);
 };
-EventTarget.prototype.hasEventListener = function(name) {
-  let events = EventTarget.prototype.events;
+EventTarget.prototype.hasEventListener = function(name, listener) {
+  var events = EventTarget.prototype.events;
   if (events[name] == null) {
     return false;
   }
 
-  return events[name].length;
+  return true;
 };

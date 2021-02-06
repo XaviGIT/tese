@@ -1,5 +1,18 @@
+const fs = require('fs');
 const puppeteer = require('puppeteer');
 const detector = require('./lib/interactions-detector');
+
+const NON_HEADLESS_CONFIG = {
+  args: [
+  '--ignore-certificate-errors',
+  '--no-sandbox',
+  '--disable-setuid-sandbox',
+  '--window-size=1920,1080',
+  "--disable-accelerated-2d-canvas",
+  "--disable-gpu"],
+  ignoreHTTPSErrors: true,
+  headless: false,
+};
 
 // const PAGE_URL = 'https://getbootstrap.com/docs/5.0/components/dropdowns/';
 // const PAGE_URL = 'https://www.google.com';
@@ -7,8 +20,11 @@ const detector = require('./lib/interactions-detector');
 const PAGE_URL = process.argv[2];
 
 (async () => {
-  const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch(NON_HEADLESS_CONFIG);
   const page = await browser.newPage();
+
+  const preload = fs.readFileSync(__dirname+'/lib/preload.js', 'utf8');
+  page.evaluateOnNewDocument(preload);
 
   await page.goto(PAGE_URL, {waitUntil: 'networkidle2'});
 
@@ -17,7 +33,7 @@ const PAGE_URL = process.argv[2];
   printEventListenersAnalysis(matches.eventListeners);
   printCompleteAnalysis(matches);
 
-  await browser.close();
+  // await browser.close();
 })();
 
 const printHTMLTriggersAnalysis = (htmlTriggers) => {

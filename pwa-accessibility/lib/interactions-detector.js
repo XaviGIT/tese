@@ -22,8 +22,8 @@ const TRIGGERS = [
 ];
 
 const EVENTS = [
-  'focus',
-  'blur',
+  // 'focus',
+  // 'blur',
   'keydown',
   'keypress',
   'keyup',
@@ -43,48 +43,12 @@ const allTriggersSelector = TRIGGERS.map(({selector }) => selector).join(', ');
 const detect = async(page) => {
   console.log('Detecting elements who trigger interactions...');
 
-  await page.evaluateOnNewDocument(addHasListener);
   const htmlTriggers = await detectHTMLTriggers(page);
   const eventListeners = await detectEventListeners(page);
 
   return {
     htmlTriggers,
     eventListeners
-  };
-}
-
-const addHasListener = () => {
-  const _addEventListener = EventTarget.prototype.addEventListener;
-  const _removeEventListener = EventTarget.prototype.removeEventListener;
-  EventTarget.prototype.events = {};
-  EventTarget.prototype.addEventListener = function(name, listener, etc) {
-    let events = EventTarget.prototype.events;
-    if (events[name] == null) {
-      events[name] = [];
-    }
-
-    if (events[name].indexOf(listener) == -1) {
-      events[name].push(listener);
-    }
-
-    _addEventListener(name, listener);
-  };
-  EventTarget.prototype.removeEventListener = function(name, listener) {
-    let events = EventTarget.prototype.events;
-
-    if (events[name] != null && events[name].indexOf(listener) != -1) {
-      events[name].splice(events[name].indexOf(listener), 1);
-    }
-
-    _removeEventListener(name, listener);
-  };
-  EventTarget.prototype.hasEventListener = function(name) {
-    let events = EventTarget.prototype.events;
-    if (events[name] == null) {
-      return false;
-    }
-
-    return events[name].length;
   };
 }
 
@@ -97,9 +61,9 @@ const listAllHTMLTriggers = (selector) => {
   let triggers = [];
 
   documentElements.forEach(el => {
-
     if(typeof el.id === 'undefined' || el.id === '') {
-      el.id = `${el.tagName}_${performance.now()}`; // Add unique id's
+      const unique_id = `${performance.now()}`.replace('.', '_');
+      el.id = `${el.tagName}_${unique_id}`; // Add unique id's
     }
 
     triggers.push({
@@ -117,54 +81,35 @@ const detectEventListeners = async(page) => {
 
 const listAllEventListeners = (events) => {
   const documentElements = Array.prototype.slice.call(document.querySelectorAll('body *'));
-  const types = [];
-  const regex = new RegExp(`^on(${events.join('|')})`);
-
-  for (let ev in window) {
-    if (regex.test(ev)) types[types.length] = ev;
-  }
 
   let listeners = [];
   for (let i = 0; i < documentElements.length; i++) {
     const currentElement = documentElements[i];
 
     if(typeof currentElement.id === 'undefined' || currentElement.id === '') {
-      currentElement.id = `${currentElement.tagName}_${performance.now()}`; // Add unique id's
+      const unique_id = `${performance.now()}`.replace('.', '_');
+      currentElement.id = `${currentElement.tagName}_${unique_id}`; // Add unique id's
     }
 
     const elementListeners = {
       'element': currentElement.id,
       'tag': currentElement.tagName,
-      'types': [],
-      'teste': currentElement.hasEventListener('click')
+      'events': []
     };
 
-    // Events defined in attributes
-    for (let j = 0; j < types.length; j++) {
-      if (typeof currentElement[types[j]] === 'function') {
-        elementListeners.types.push(types[j]);
+    events.forEach(type => {
+      //console.log(`${type}: ${currentElement.id}, ${currentElement.hasEventListener(type)}`);
+      if (
+        typeof currentElement[type] === 'function' ||   // Events defined in attributes
+        currentElement.hasEventListener(type)           // Events defined in event listeners
+      ) {
+        elementListeners.events.push(type);
       }
-    }
+    });
 
-    if (elementListeners.types.length > 0) {
+    if (elementListeners.events.length > 0) {
       listeners.push(elementListeners);
     }
-
-    // Events defined with addEventListener
-    // if (typeof currentElement._getEventListeners === 'function') {
-    //   const evts = currentElement._getEventListeners();
-    //   if (Object.keys(evts).length >0) {
-    //     for (let evt of Object.keys(evts)) {
-    //       for (let k=0; k < evts[evt].length; k++) {
-    //         listeners.push({
-    //           "element": currentElement.id,
-    //           "type": evt,
-    //           //"func": evts[evt][k].listener.toString()
-    //         });
-    //       }
-    //     }
-    //   }
-    // }
   }
 
   return listeners.sort();
