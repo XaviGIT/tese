@@ -98,10 +98,10 @@ const listAllEventListeners = (events) => {
     };
 
     events.forEach(type => {
-      //console.log(`${type}: ${currentElement.id}, ${currentElement.hasEventListener(type)}`);
+      // console.log(`${type}: ${currentElement.id}, ${currentElement.hasEventListener(type)}`);
       if (
-        typeof currentElement[type] === 'function' ||   // Events defined in attributes
-        currentElement.hasEventListener(type)           // Events defined in event listeners
+        typeof currentElement[`on${type}`] === 'function' ||   // Events defined in attributes
+        currentElement.hasEventListener(type)                  // Events defined in event listeners
       ) {
         elementListeners.events.push(type);
       }

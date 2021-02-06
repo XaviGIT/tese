@@ -1,32 +1,42 @@
-var _addEventListener = EventTarget.prototype.addEventListener;
-var _removeEventListener = EventTarget.prototype.removeEventListener;
-EventTarget.prototype.events = {};
-EventTarget.prototype.addEventListener = function(name, listener, etc) {
-  var events = EventTarget.prototype.events;
-  if (events[name] == null) {
-    events[name] = [];
+(function() {
+  // keep a reference to the original methods
+  const _addEventListener = Element.prototype.addEventListener;
+  const _removeEventListener = Element.prototype.removeEventListener;
+  Element.prototype.events = {};
+
+  Element.prototype.addEventListener = function (type, listener, useCapture) {
+    const events = Element.prototype.events;
+
+    if (!events[type]) {
+      events[type] = [];
+    }
+
+    if (events[type].indexOf(listener) === -1) {
+      events[type].push(listener);
+    }
+
+    // call the original method
+    return _addEventListener.call(this, type, listener, useCapture);
+  };
+
+  Element.prototype.removeEventListener = function (type, listener, useCapture) {
+    const events = Element.prototype.events;
+
+    if (events[type] && events[type].indexOf(listener) !== -1) {
+      events[type].splice(events[type].indexOf(listener), 1);
+    }
+
+    return _removeEventListener.call(this, type, listener, useCapture);
   }
 
-  if (events[name].indexOf(listener) == -1) {
-    events[name].push(listener);
+  Element.prototype.hasEventListener = function(type, listener, useCapture) {
+    const events = Element.prototype.events;
+    console.log(events);
+    if (!events[type] || events[type].indexOf(listener) === -1) {
+      return false;
+    }
+
+    return true;
   }
 
-  _addEventListener(name, listener);
-};
-EventTarget.prototype.removeEventListener = function(name, listener) {
-  var events = EventTarget.prototype.events;
-
-  if (events[name] != null && events[name].indexOf(listener) != -1) {
-    events[name].splice(events[name].indexOf(listener), 1);
-  }
-
-  _removeEventListener(name, listener);
-};
-EventTarget.prototype.hasEventListener = function(name, listener) {
-  var events = EventTarget.prototype.events;
-  if (events[name] == null) {
-    return false;
-  }
-
-  return true;
-};
+}());
