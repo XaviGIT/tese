@@ -7,8 +7,7 @@ const TRIGGERS = [
   { id: 'carousel-03', selector: '.carousel .next' },
   { id: 'carousel-04', selector: '.carousel .prev' },
   { id: 'carousel-05', selector: '.carousel .previous' },
-  { id: 'toggle-01', selector: '[aria-expanded]' },
-  { id: 'toggle-02', selector: '[data-bs-toggle]' },
+  { id: 'toggle-01', selector: '[data-bs-toggle]' },
   { id: 'pagination-03', selector: '.pagination .next' },
   { id: 'pagination-04', selector: '.pagination .prev' },
   { id: 'pagination-05', selector: '.pagination .previous' },
@@ -17,8 +16,28 @@ const TRIGGERS = [
   { id: 'pagination-08', selector: '.menu .previous' },
   // { id: 'menu-01', selector: 'nav li > :not(a)' },
   // { id: 'menu-02', selector: '.pagination li:not(:has(a))' },
-  { id: 'select-01', selector: '[aria-selected]' },
   { id: 'editable-01', selector: '[contenteditable]' },
+  { id: 'aria-widget-roles-01', selector: '[role="button"]' },
+  { id: 'aria-widget-roles-02', selector: '[role="checkbox"]' },
+  { id: 'aria-widget-roles-03', selector: '[role="gridcell"]' },
+  { id: 'aria-widget-roles-04', selector: '[role="link"]' },
+  { id: 'aria-widget-roles-05', selector: '[role="menuitem"]' },
+  { id: 'aria-widget-roles-06', selector: '[role="menuitemcheckbox"]' },
+  { id: 'aria-widget-roles-07', selector: '[role="menuitemradio"]' },
+  { id: 'aria-widget-roles-08', selector: '[role="option"]' },
+  { id: 'aria-widget-roles-09', selector: '[role="progressbar"]' },
+  { id: 'aria-widget-roles-10', selector: '[role="radio"]' },
+  { id: 'aria-widget-roles-11', selector: '[role="scrollbar"]' },
+  { id: 'aria-widget-roles-12', selector: '[role="searchbox"]' },
+  { id: 'aria-widget-roles-13', selector: '[role="separator"]' },
+  { id: 'aria-widget-roles-14', selector: '[role="slider"]' },
+  { id: 'aria-widget-roles-15', selector: '[role="spinbutton"]' },
+  { id: 'aria-widget-roles-16', selector: '[role="switch"]' },
+  { id: 'aria-widget-roles-17', selector: '[role="tab"]' },
+  { id: 'aria-widget-roles-18', selector: '[role="textbox"]' },
+  { id: 'aria-widget-roles-18', selector: '[role="treeitem"]' },
+  { id: 'aria-widget-attributes-01', selector: '[aria-selected]' },
+  { id: 'aria-widget-attributes-02', selector: '[aria-expanded]' },
 ];
 
 const EVENTS = [
@@ -98,7 +117,6 @@ const listAllEventListeners = (events) => {
     };
 
     events.forEach(type => {
-      // console.log(`${type}: ${currentElement.id}, ${currentElement.hasEventListener(type)}`);
       if (
         typeof currentElement[`on${type}`] === 'function' ||   // Events defined in attributes
         currentElement.hasEventListener(type)                  // Events defined in event listeners

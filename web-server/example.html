@@ -6,13 +6,15 @@
   </head>
   <body>
     <h1>Testing</h1>
-    <p contenteditable="true">This is a webpage used for testing purposes</p>
+    <p id="content-editable" contenteditable="true">This is a webpage used for testing purposes</p>
+    <p id="content-not-editable">Just use it at your own risk!</p>
     <form>
       <div id="trigger1">Div with click added by addEventListener</div>
       <div id="trigger2">Div with click added by jQuery click</div>
       <div id="trigger3" onclick="customClick('div onclick')">Div with click added by onclick</div>
       <div class="trigger4">Div with click added by addEventListener using class</div>
       <button onclick="customClick('button onclick')">Button with click added by onclick</button>
+      <div id="trigger5" role="button">Div with aria role button!</div>
     </form>
 
     <script type="text/javascript">
@@ -22,7 +24,7 @@
           console.log("div addEventListener");
         });
 
-        $("#trigger2").click(() => {
+        $("#trigger2, #trigger5").click(() => {
           console.log("div jQuery click");
         });
 

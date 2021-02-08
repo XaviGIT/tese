@@ -20,7 +20,7 @@ const NON_HEADLESS_CONFIG = {
 const PAGE_URL = process.argv[2];
 
 (async () => {
-  const browser = await puppeteer.launch(NON_HEADLESS_CONFIG);
+  const browser = await puppeteer.launch();
   const page = await browser.newPage();
 
   const preload = fs.readFileSync(__dirname+'/lib/preload.js', 'utf8');
@@ -33,7 +33,7 @@ const PAGE_URL = process.argv[2];
   printEventListenersAnalysis(matches.eventListeners);
   printCompleteAnalysis(matches);
 
-  // await browser.close();
+  await browser.close();
 })();
 
 const printHTMLTriggersAnalysis = (htmlTriggers) => {
