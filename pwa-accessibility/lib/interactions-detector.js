@@ -16,7 +16,7 @@ const TRIGGERS = [
   { id: 'pagination-08', selector: '.menu .previous' },
   // { id: 'menu-01', selector: 'nav li > :not(a)' },
   // { id: 'menu-02', selector: '.pagination li:not(:has(a))' },
-  { id: 'editable-01', selector: '[contenteditable]' },
+  // { id: 'editable-01', selector: '[contenteditable]' },
   { id: 'aria-widget-roles-01', selector: '[role="button"]' },
   { id: 'aria-widget-roles-02', selector: '[role="checkbox"]' },
   { id: 'aria-widget-roles-03', selector: '[role="gridcell"]' },
@@ -65,9 +65,16 @@ const detect = async(page) => {
   const htmlTriggers = await detectHTMLTriggers(page);
   const eventListeners = await detectEventListeners(page);
 
+  const resultSet = new Set(htmlTriggers.map(({ element }) => element));
+  const combined = [
+    ...htmlTriggers,
+    ...eventListeners.filter(({ element }) => !resultSet.has(element))
+  ];
+
   return {
     htmlTriggers,
-    eventListeners
+    eventListeners,
+    combined
   };
 }
 
@@ -87,7 +94,8 @@ const listAllHTMLTriggers = (selector) => {
 
     triggers.push({
       'element': el.id,
-      'tag': el.tagName
+      'tag': el.tagName,
+      'events': ['click']
     });
   });
 

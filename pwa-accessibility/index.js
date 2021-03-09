@@ -1,6 +1,16 @@
 const fs = require('fs');
 const puppeteer = require('puppeteer');
 const detector = require('./lib/interactions-detector');
+const generator = require('./lib/event-generator');
+const { performance, PerformanceObserver } = require("perf_hooks")
+
+const po = new PerformanceObserver((items) => {
+  items.getEntries().forEach((entry) => {
+    console.log(entry)
+  })
+});
+po.observe({ entryTypes: ["measure"], buffer: true });
+
 
 const NON_HEADLESS_CONFIG = {
   args: [
@@ -20,20 +30,31 @@ const NON_HEADLESS_CONFIG = {
 const PAGE_URL = process.argv[2];
 
 (async () => {
-  const browser = await puppeteer.launch();
+  performance.mark('start-puppeteer');
+  const browser = await puppeteer.launch(NON_HEADLESS_CONFIG);
   const page = await browser.newPage();
 
+  performance.mark('add-ids');
   const preload = fs.readFileSync(__dirname+'/lib/preload.js', 'utf8');
   page.evaluateOnNewDocument(preload);
 
+  performance.mark('start-page');
   await page.goto(PAGE_URL, {waitUntil: 'networkidle2'});
 
+  performance.mark('start-detect-triggers');
   const matches = await detector.detectTriggers(page);
-  printHTMLTriggersAnalysis(matches.htmlTriggers);
-  printEventListenersAnalysis(matches.eventListeners);
-  printCompleteAnalysis(matches);
+  performance.mark('end-detect-triggers');
+  // printHTMLTriggersAnalysis(matches.htmlTriggers);
+  // printEventListenersAnalysis(matches.eventListeners);
+  printCompleteAnalysis(matches.combined);
 
-  await browser.close();
+  // performance.mark('generate events');
+  generator.generateEvents(browser, page, matches.combined);
+
+  // performance.measure('start', 'start-puppeteer', 'start-detect-triggers');
+  performance.measure('triggers', 'start-detect-triggers', 'end-detect-triggers');
+
+  // await browser.close();
 })();
 
 const printHTMLTriggersAnalysis = (htmlTriggers) => {
@@ -46,13 +67,7 @@ const printEventListenersAnalysis = (eventListeners) => {
   console.table(eventListeners);
 }
 
-const printCompleteAnalysis = (matches) => {
-  const resultSet = new Set(matches.htmlTriggers.map(({ element }) => element));
-  const combined = [
-    ...matches.htmlTriggers,
-    ...matches.eventListeners.filter(({ element }) => !resultSet.has(element))
-  ];
-
-  console.log('Combined:');
+const printCompleteAnalysis = (combined) => {
+  console.log('Interactions detected:');
   console.table(combined);
 }
