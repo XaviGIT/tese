@@ -1,4 +1,5 @@
 (function() {
+
   // keep a reference to the original methods
   const _addEventListener = Element.prototype.addEventListener;
   const _removeEventListener = Element.prototype.removeEventListener;
@@ -14,7 +15,7 @@
     // Add unique id
     if(this.id === '') {
       const unique_id = `${performance.now()}`.replace('.', '_');
-      this.id = `${this.tagName}_${unique_id}`;
+      this.id = `qualweb_${this.tagName}_${unique_id}`;
     }
 
     if (events[type].indexOf(this.id) === -1) {

@@ -2,15 +2,7 @@ const fs = require('fs');
 const puppeteer = require('puppeteer');
 const detector = require('./lib/interactions-detector');
 const generator = require('./lib/event-generator');
-const { performance, PerformanceObserver } = require("perf_hooks")
-
-const po = new PerformanceObserver((items) => {
-  items.getEntries().forEach((entry) => {
-    console.log(entry)
-  })
-});
-po.observe({ entryTypes: ["measure"], buffer: true });
-
+const memory = require('./lib/checkpoint-memory');
 
 const NON_HEADLESS_CONFIG = {
   args: [
@@ -30,32 +22,46 @@ const NON_HEADLESS_CONFIG = {
 const PAGE_URL = process.argv[2];
 
 (async () => {
-  performance.mark('start-puppeteer');
+  console.time('analysis');
   const browser = await puppeteer.launch(NON_HEADLESS_CONFIG);
   const page = await browser.newPage();
 
-  performance.mark('add-ids');
+  console.time('add event listeners');
   const preload = fs.readFileSync(__dirname+'/lib/preload.js', 'utf8');
   page.evaluateOnNewDocument(preload);
+  console.timeEnd('add event listeners');
 
-  performance.mark('start-page');
-  await page.goto(PAGE_URL, {waitUntil: 'networkidle2'});
+  await page.goto(PAGE_URL, { waitUntil: 'networkidle2' });
 
-  performance.mark('start-detect-triggers');
+  const id = await analyseCheckpoint(page);
+  await generateCheckpointEvents(browser, page, id);
+
+  // await browser.close();
+
+  console.timeEnd('analysis');
+})();
+
+const analyseCheckpoint = async(page) => {
+  console.time('analyse checkpoint');
+  const id = await memory.saveNewCheckpoint(page);
   const matches = await detector.detectTriggers(page);
-  performance.mark('end-detect-triggers');
+
   // printHTMLTriggersAnalysis(matches.htmlTriggers);
   // printEventListenersAnalysis(matches.eventListeners);
   printCompleteAnalysis(matches.combined);
+  memory.updateCheckpointTriggers(id, matches.combined);
 
-  // performance.mark('generate events');
-  generator.generateEvents(browser, page, matches.combined);
+  console.timeEnd('analyse checkpoint');
+  return id;
+}
 
-  // performance.measure('start', 'start-puppeteer', 'start-detect-triggers');
-  performance.measure('triggers', 'start-detect-triggers', 'end-detect-triggers');
-
-  // await browser.close();
-})();
+const generateCheckpointEvents = async (browser, page, checkpointId) => {
+  console.time('generate events');
+  const mutations = await generator.generateEventsSequential(browser, page, memory.getCheckpointTriggers(checkpointId));
+  // const mutations = generator.generateEventsParallel(browser, page, memory.getCheckpointTriggers(checkpointId));
+  console.log(mutations);
+  console.timeEnd('generate events');
+}
 
 const printHTMLTriggersAnalysis = (htmlTriggers) => {
   console.log(`HTML triggers: ${htmlTriggers.length}`);

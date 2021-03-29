@@ -1,21 +1,16 @@
-// let observer;
+let observer;
 
-const startIdentifier = async(page, target) => {
-  return await page.evaluate((t) => {
-    const config = { characterData: true, attributes: true, childList: true, subtree: true };
-    const MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
-    const o = new MutationObserver((mutations) => {
-      console.log(mutations);
-      o.disconnect();
-    });
-    o.observe(document.querySelector(t), config);
-
-  }, target);
+const startIdentifier = () => {
+  const config = { characterData: true, attributes: true, childList: true, subtree: true };
+  const MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
+  observer = new MutationObserver((mutations) => {
+    console.log(mutations);
+  });
+  observer.observe(document.querySelector('body'), config);
 }
 
 const stopIdentifier = () => {
-  // console.log(observer);
-  // observer.disconnect();
+  observer.disconnect();
 }
 
 module.exports = {

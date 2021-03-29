@@ -60,15 +60,17 @@ const EVENTS = [
 const allTriggersSelector = TRIGGERS.map(({selector }) => selector).join(', ');
 
 const detect = async(page) => {
-  console.log('Detecting elements who trigger interactions...');
+  console.log('\nDetecting elements who trigger interactions...');
+
+  await page.addScriptTag({ path: 'lib/utils.js'});
 
   const htmlTriggers = await detectHTMLTriggers(page);
   const eventListeners = await detectEventListeners(page);
 
-  const resultSet = new Set(htmlTriggers.map(({ element }) => element));
+  const resultSet = new Set(htmlTriggers.map(({ xpath }) => xpath));
   const combined = [
     ...htmlTriggers,
-    ...eventListeners.filter(({ element }) => !resultSet.has(element))
+    ...eventListeners.filter(({ xpath }) => !resultSet.has(xpath))
   ];
 
   return {
@@ -87,13 +89,8 @@ const listAllHTMLTriggers = (selector) => {
   let triggers = [];
 
   documentElements.forEach(el => {
-    if(typeof el.id === 'undefined' || el.id === '') {
-      const unique_id = `${performance.now()}`.replace('.', '_');
-      el.id = `${el.tagName}_${unique_id}`; // Add unique id's
-    }
-
     triggers.push({
-      'element': el.id,
+      'xpath': getXPathForElement(el),
       'tag': el.tagName,
       'events': ['click']
     });
@@ -113,13 +110,8 @@ const listAllEventListeners = (events) => {
   for (let i = 0; i < documentElements.length; i++) {
     const currentElement = documentElements[i];
 
-    if(typeof currentElement.id === 'undefined' || currentElement.id === '') {
-      const unique_id = `${performance.now()}`.replace('.', '_');
-      currentElement.id = `${currentElement.tagName}_${unique_id}`; // Add unique id's
-    }
-
     const elementListeners = {
-      'element': currentElement.id,
+      'xpath': getXPathForElement(currentElement),
       'tag': currentElement.tagName,
       'events': []
     };
