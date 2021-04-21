@@ -33,7 +33,8 @@ const PAGE_URL = process.argv[2];
 
   await page.goto(PAGE_URL, { waitUntil: 'networkidle2' });
 
-  const id = await analyseCheckpoint(page);
+  const id = await memory.saveNewCheckpoint(page);
+  await analyseCheckpoint(page);
   await generateCheckpointEvents(browser, page, id);
 
   // await browser.close();
@@ -41,26 +42,34 @@ const PAGE_URL = process.argv[2];
   console.timeEnd('analysis');
 })();
 
-const analyseCheckpoint = async(page) => {
+const analyseCheckpoint = async(page, checkpointId) => {
   console.time('analyse checkpoint');
-  const id = await memory.saveNewCheckpoint(page);
+
   const matches = await detector.detectTriggers(page);
 
   // printHTMLTriggersAnalysis(matches.htmlTriggers);
   // printEventListenersAnalysis(matches.eventListeners);
   printCompleteAnalysis(matches.combined);
-  memory.updateCheckpointTriggers(id, matches.combined);
+  memory.updateCheckpointTriggers(checkpointId, matches.combined);
 
   console.timeEnd('analyse checkpoint');
   return id;
 }
 
 const generateCheckpointEvents = async (browser, page, checkpointId) => {
-  console.time('generate events');
-  const mutations = await generator.generateEventsSequential(browser, page, memory.getCheckpointTriggers(checkpointId));
-  // const mutations = generator.generateEventsParallel(browser, page, memory.getCheckpointTriggers(checkpointId));
-  console.log(mutations);
-  console.timeEnd('generate events');
+  const checkpoint = memory.getCheckpoint(checkpointId);
+  // console.time('generate events sequential');
+  // const mutationsSequential = await generator.generateEventsSequential(browser, page, checkpoint);
+  // console.timeEnd('generate events sequential');
+  // console.log(mutationsSequential);
+  console.time('generate events parallel');
+  const mutationsParallel = await generator.generateEventsParallel(browser, page, checkpoint);
+  console.timeEnd('generate events parallel');
+  console.log(mutationsParallel);
+  // console.time('generate events tabs');
+  // const mutationsTabs = await generator.generateEventsTabs(browser, checkpoint);
+  // console.timeEnd('generate events tabs');
+  // console.log(mutationsTabs);
 }
 
 const printHTMLTriggersAnalysis = (htmlTriggers) => {

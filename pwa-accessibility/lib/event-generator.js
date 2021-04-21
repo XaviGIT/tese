@@ -1,5 +1,6 @@
-const triggerEvent = async(page, elem, mutations) => {
-  await page.evaluate(async(entry) => {
+const triggerEvent = async (page, elem, mutations) => {
+  await page.evaluate(async (entry) => {
+
     const newMutations = await new Promise((resolve, reject) => {
       const config = { characterData: true, attributes: true, childList: true, subtree: true };
       const MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
@@ -12,7 +13,7 @@ const triggerEvent = async(page, elem, mutations) => {
         .evaluate(entry.xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
         .singleNodeValue;
       element.click();
-      setTimeout(() => resolve([]), 1000);
+      setTimeout(() => resolve([]), 500);
     });
 
     const nodesToText = (arr) => {
@@ -20,31 +21,26 @@ const triggerEvent = async(page, elem, mutations) => {
       if (arr) {
         arr.forEach(el => {
           result.push(getXPathForElement(el));
-        })
+        });
       }
       return result;
-    }
+    };
 
-    newMutations.forEach(({type, addedNodes, removedNodes, attributeName}) => {
+    newMutations.forEach(({ type, addedNodes, removedNodes, attributeName }) => {
       updateMutations(type, nodesToText(addedNodes), nodesToText(removedNodes), attributeName);
     });
 
     return;
   }, elem);
-}
+};
 
-const generateEventsSequential = async(browser, page, triggers) => {
-
+const generateEventsSequential = async (browser, page, checkpoint) => {
+  const triggers = checkpoint.triggers;
+  const url = checkpoint.url;
   const mutations = [];
 
-  await page.exposeFunction('updateMutations', (type, addedNodes, removedNodes, attributeName) => {
-    mutations.push({
-      type,
-      addedNodes,
-      removedNodes,
-      attributeName
-    })
-  });
+  await preventExternalInteractions(page, url);
+  await exposeMutations(page, mutations);
 
   await triggers.reduce(async (memo, trigger) => {
     await memo;
@@ -52,31 +48,71 @@ const generateEventsSequential = async(browser, page, triggers) => {
   }, undefined);
 
   return mutations;
-}
+};
 
-const generateEventsParallel = async(browser, page, triggers) => {
+const generateEventsParallel = async (browser, page, checkpoint) => {
+  const triggers = checkpoint.triggers;
+  const url = checkpoint.url;
   const mutations = [];
 
-  await page.exposeFunction('updateMutations', (type, addedNodes, removedNodes, attributeName) => {
-    mutations.push({
-      type,
-      addedNodes,
-      removedNodes,
-      attributeName
-    })
-  });
+  await preventExternalInteractions(page, url);
+  await exposeMutations(page, mutations);
 
-  await Promise.all(triggers.map(async(trigger) => {
+  await Promise.all(triggers.map(async (trigger) => {
+    await triggerEvent(page, trigger, mutations);
+  }));
+
+  return mutations;
+};
+
+const generateEventsTabs = async (browser, checkpoint) => {
+  const url = checkpoint.url;
+  const mutations = [];
+
+  await Promise.all(checkpoint.triggers.map(async (trigger) => {
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: 'networkidle2' });
+    await page.addScriptTag({ path: 'lib/utils.js'});
+    await preventExternalInteractions(page, url);
+    await exposeMutations(page, mutations);
+
     await triggerEvent(page, trigger, mutations);
   }));
 
   return mutations;
 }
 
+const preventExternalInteractions = async(page, url) => {
+  await page.setRequestInterception(true);
+  page.on('request', req => {
+    if (req.isNavigationRequest() && req.frame() === page.mainFrame() && req.url() !== url) {
+      // no redirect chain means the navigation is caused by setting `location.href`
+      req.respond(req.redirectChain().length
+        ? { body: '' } // prevent 301/302 redirect
+        : { status: 204 } // prevent navigation by js
+      )
+    } else {
+      req.continue()
+    }
+  });
+}
+
+const exposeMutations = async(page, mutations) => {
+  await page.exposeFunction('updateMutations', (type, addedNodes, removedNodes, attributeName) => {
+    mutations.push({
+      type,
+      addedNodes,
+      removedNodes,
+      attributeName
+    });
+  });
+}
+
 module.exports = {
   generateEventsSequential,
   generateEventsParallel,
-}
+  generateEventsTabs
+};
 
 // await page.exposeFunction('triggerEvent', (element, events) => {
   //     if (element && events) {

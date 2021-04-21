@@ -29,7 +29,10 @@
       <div class="trigger4">Div with click added by addEventListener using class</div>
       <!-- <button onclick="customClick('button onclick')">Button with click added by onclick</button> -->
       <div id="trigger5" role="button">Show secret message...</div>
+      <button onclick="changePage(event)">Button that changes page</button>
     </form>
+
+    <!-- <iframe height="800" width="1000" src="http://127.0.0.1:4200"></iframe> -->
 
     <script type="text/javascript">
       run = () => {
@@ -53,6 +56,13 @@
 
       customClick = (msg) => {
         console.log(msg);
+      };
+
+      changePage = (evt) => {
+        evt.preventDefault();
+        console.log("changing page..");
+        document.location.href = "https://ciencias.ulisboa.pt/pt/lasige";
+        return false;
       };
 
       showSecret = () => {

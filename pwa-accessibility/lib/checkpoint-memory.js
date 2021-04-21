@@ -8,19 +8,27 @@ const generateHash = (content) => {
 
 const saveNewCheckpoint = async (page) => {
   const content = await page.$eval('body', element => element);
+  const url = await page.url();
   const id = generateHash(content);
-  memory[id] = {
-    prev: null,
-    content: page,
-    triggers: [],
-    next: []
-  };
+  if (!memory[id]) {
+    memory[id] = {
+      prev: [],
+      // content: page,
+      url,
+      triggers: [],
+      next: []
+    };
+  }
 
   return id;
 }
 
 const updateCheckpointTriggers = (id, triggers) => {
   memory[id].triggers = triggers;
+}
+
+const getCheckpoint = (id) => {
+  return memory[id];
 }
 
 const getCheckpointTriggers = (id) => {
@@ -30,5 +38,6 @@ const getCheckpointTriggers = (id) => {
 module.exports = {
   saveNewCheckpoint,
   updateCheckpointTriggers,
+  getCheckpoint,
   getCheckpointTriggers
 }
