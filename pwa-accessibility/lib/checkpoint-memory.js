@@ -1,43 +1,76 @@
 const hash = require('object-hash');
 
-let memory = {};
+class Memory {
+  constructor() {
+    this.memory = {};
+  }
 
-const generateHash = (content) => {
-  return hash(content);
-}
+  generateHash = (content) => {
+    return hash(content);
+  }
 
-const saveNewCheckpoint = async (page) => {
-  const content = await page.$eval('body', element => element);
-  const url = await page.url();
-  const id = generateHash(content);
-  if (!memory[id]) {
-    memory[id] = {
-      prev: [],
-      // content: page,
+  generateId = async(page) => {
+    const content = await page.evaluate(() => document.body.innerHTML);
+    return this.generateHash(content);
+  }
+
+  createCheckpoint = async(id, url, prev = [], changes = []) => {
+    this.memory[id] = {
+      id,
+      prev: prev,
       url,
       triggers: [],
+      changes,
       next: []
     };
   }
 
+  updateCheckpoint = async(id, newPrev = [], changes = []) => {
+    if (newPrev) {
+      this.memory[id].prev.concat(newPrev);
+    }
+    this.memory[id].changes.concat(changes);
+  }
+
+ saveCheckpoint = async(page, prev, changes = []) => {
+  const id = await this.generateId(page);
+  const prevArr = prev ? [prev] : [];
+  if (!this.hasCheckpointById(id)) {
+    const url = await page.url();
+    this.createCheckpoint(id, url, prevArr, changes);
+  } else {
+    this.updateCheckpoint(id, prevArr, changes);
+  }
   return id;
-}
+ }
 
-const updateCheckpointTriggers = (id, triggers) => {
-  memory[id].triggers = triggers;
-}
+  hasCheckpointByPage = async(page) => {
+    const id = await this.generateId(page);
+    return this.memory[id] !== undefined;
+  }
 
-const getCheckpoint = (id) => {
-  return memory[id];
-}
+  hasCheckpointById = (id) => {
+    return this.memory[id] !== undefined;
+  }
 
-const getCheckpointTriggers = (id) => {
-  return memory[id].triggers;
-}
+  getCheckpointById = (id) => {
+    return this.memory[id];
+  }
 
-module.exports = {
-  saveNewCheckpoint,
-  updateCheckpointTriggers,
-  getCheckpoint,
-  getCheckpointTriggers
+  getCheckpointTriggersById = (id) => {
+    return this.memory[id].triggers;
+  }
+
+  updateCheckpointTriggersById = (id, triggers) => {
+    this.memory[id].triggers = triggers;
+  }
+
+  updateCheckpointNextById = (id, newNext) => {
+    this.memory[id].next.push(newNext);
+  }
+
+  print = () => {
+    console.table(this.memory);
+  }
 }
+module.exports = new Memory();

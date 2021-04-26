@@ -33,8 +33,8 @@ const PAGE_URL = process.argv[2];
 
   await page.goto(PAGE_URL, { waitUntil: 'networkidle2' });
 
-  const id = await memory.saveNewCheckpoint(page);
-  await analyseCheckpoint(page);
+  const id = await memory.saveCheckpoint(page);
+  await analyseCheckpoint(page, id);
   await generateCheckpointEvents(browser, page, id);
 
   // await browser.close();
@@ -50,26 +50,25 @@ const analyseCheckpoint = async(page, checkpointId) => {
   // printHTMLTriggersAnalysis(matches.htmlTriggers);
   // printEventListenersAnalysis(matches.eventListeners);
   printCompleteAnalysis(matches.combined);
-  memory.updateCheckpointTriggers(checkpointId, matches.combined);
+  memory.updateCheckpointTriggersById(checkpointId, matches.combined);
 
   console.timeEnd('analyse checkpoint');
-  return id;
 }
 
 const generateCheckpointEvents = async (browser, page, checkpointId) => {
-  const checkpoint = memory.getCheckpoint(checkpointId);
+  const checkpoint = memory.getCheckpointById(checkpointId);
   // console.time('generate events sequential');
   // const mutationsSequential = await generator.generateEventsSequential(browser, page, checkpoint);
   // console.timeEnd('generate events sequential');
   // console.log(mutationsSequential);
-  console.time('generate events parallel');
-  const mutationsParallel = await generator.generateEventsParallel(browser, page, checkpoint);
-  console.timeEnd('generate events parallel');
-  console.log(mutationsParallel);
-  // console.time('generate events tabs');
-  // const mutationsTabs = await generator.generateEventsTabs(browser, checkpoint);
-  // console.timeEnd('generate events tabs');
-  // console.log(mutationsTabs);
+  // console.time('generate events parallel');
+  // const mutationsParallel = await generator.generateEventsParallel(browser, page, checkpoint);
+  // console.timeEnd('generate events parallel');
+  // console.log(mutationsParallel);
+  console.time('generate events tabs');
+  await generator.generateEventsTabs(browser, checkpoint);
+  console.timeEnd('generate events tabs');
+  console.log(memory.print());
 }
 
 const printHTMLTriggersAnalysis = (htmlTriggers) => {

@@ -1,3 +1,5 @@
+const memory = require('./checkpoint-memory');
+
 const triggerEvent = async (page, elem, mutations) => {
   await page.evaluate(async (entry) => {
 
@@ -66,20 +68,26 @@ const generateEventsParallel = async (browser, page, checkpoint) => {
 };
 
 const generateEventsTabs = async (browser, checkpoint) => {
-  const url = checkpoint.url;
-  const mutations = [];
+  const {id, url, triggers} = checkpoint;
 
-  await Promise.all(checkpoint.triggers.map(async (trigger) => {
+  await Promise.all(triggers.map(async (trigger) => {
+    const mutations = [];
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: 'networkidle2' });
     await page.addScriptTag({ path: 'lib/utils.js'});
+
     await preventExternalInteractions(page, url);
     await exposeMutations(page, mutations);
-
     await triggerEvent(page, trigger, mutations);
-  }));
 
-  return mutations;
+    setTimeout(async() => {
+      if (mutations.length > 0) {
+        const newId = await memory.saveCheckpoint(page, id, mutations);
+        memory.updateCheckpoint(id, [newId], []);
+      }
+      page.close();
+    }, 500);
+  }));
 }
 
 const preventExternalInteractions = async(page, url) => {
