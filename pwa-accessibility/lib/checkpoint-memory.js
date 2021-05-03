@@ -32,17 +32,17 @@ class Memory {
     this.memory[id].changes.concat(changes);
   }
 
- saveCheckpoint = async(page, prev, changes = []) => {
-  const id = await this.generateId(page);
-  const prevArr = prev ? [prev] : [];
-  if (!this.hasCheckpointById(id)) {
-    const url = await page.url();
-    this.createCheckpoint(id, url, prevArr, changes);
-  } else {
-    this.updateCheckpoint(id, prevArr, changes);
+  saveCheckpoint = async(page, prev, changes = []) => {
+    const id = await this.generateId(page);
+    const prevArr = prev ? [prev] : [];
+    if (!this.hasCheckpointById(id)) {
+      const url = await page.url();
+      this.createCheckpoint(id, url, prevArr, changes);
+    } else {
+      this.updateCheckpoint(id, prevArr, changes);
+    }
+    return id;
   }
-  return id;
- }
 
   hasCheckpointByPage = async(page) => {
     const id = await this.generateId(page);
@@ -70,7 +70,7 @@ class Memory {
   }
 
   print = () => {
-    console.table(this.memory);
+    console.log(this.memory);
   }
 }
 module.exports = new Memory();

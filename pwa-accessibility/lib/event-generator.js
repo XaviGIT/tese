@@ -77,13 +77,13 @@ const generateEventsTabs = async (browser, checkpoint) => {
     await page.addScriptTag({ path: 'lib/utils.js'});
 
     await preventExternalInteractions(page, url);
-    await exposeMutations(page, mutations);
+    await exposeMutations(page, mutations, trigger);
     await triggerEvent(page, trigger, mutations);
 
     setTimeout(async() => {
       if (mutations.length > 0) {
         const newId = await memory.saveCheckpoint(page, id, mutations);
-        memory.updateCheckpoint(id, [newId], []);
+        memory.updateCheckpointNextById(id, newId);
       }
       page.close();
     }, 500);
@@ -105,13 +105,14 @@ const preventExternalInteractions = async(page, url) => {
   });
 }
 
-const exposeMutations = async(page, mutations) => {
+const exposeMutations = async(page, mutations, trigger) => {
   await page.exposeFunction('updateMutations', (type, addedNodes, removedNodes, attributeName) => {
     mutations.push({
       type,
       addedNodes,
       removedNodes,
-      attributeName
+      attributeName,
+      trigger
     });
   });
 }
