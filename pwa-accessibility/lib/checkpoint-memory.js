@@ -1,4 +1,5 @@
 const hash = require('object-hash');
+const files = require('./file-manager');
 
 class Memory {
   constructor() {
@@ -21,7 +22,8 @@ class Memory {
       url,
       triggers: [],
       changes,
-      next: []
+      next: [],
+      tested: false
     };
   }
 
@@ -71,6 +73,26 @@ class Memory {
 
   print = () => {
     console.log(this.memory);
+  }
+
+  saveToFile = () => {
+    files.storeData(this.memory, './data.json');
+  }
+
+  getCheckpointsNotTested = () => {
+    const result = [];
+
+    for (let checkpointId in this.memory) {
+      if (!this.memory[checkpointId].tested) {
+        result.push(checkpointId);
+      }
+    }
+
+    return result;
+  }
+
+  isCheckpointTested = (id) => {
+    return this.memory[id].tested;
   }
 }
 module.exports = new Memory();

@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 // list of triggers we want to search for
 const TRIGGERS = [
   { id: 'internal-anchor-01', selector: 'a[href="#"]' },
@@ -61,6 +63,12 @@ const allTriggersSelector = TRIGGERS.map(({selector }) => selector).join(', ');
 
 const detect = async(page) => {
   console.log('\nDetecting elements who trigger interactions...');
+
+  console.time('add event listeners');
+  const preload = fs.readFileSync(__dirname+'/preload.js', 'utf8');
+  page.evaluateOnNewDocument(preload);
+  await page.reload();
+  console.timeEnd('add event listeners');
 
   await page.addScriptTag({ path: 'lib/utils.js'});
 

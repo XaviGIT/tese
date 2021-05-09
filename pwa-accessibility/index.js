@@ -22,27 +22,28 @@ const NON_HEADLESS_CONFIG = {
 const PAGE_URL = process.argv[2];
 
 (async () => {
-  console.time('analysis');
+  console.time('full run');
   const browser = await puppeteer.launch(NON_HEADLESS_CONFIG);
-  const page = await browser.newPage();
 
-  console.time('add event listeners');
-  const preload = fs.readFileSync(__dirname+'/lib/preload.js', 'utf8');
-  page.evaluateOnNewDocument(preload);
-  console.timeEnd('add event listeners');
+  analyseCheckpoint(browser, PAGE_URL);
+  // await browser.close();
+
+  console.timeEnd('full run');
+})();
+
+const analyseCheckpoint = async(browser, url, checkpointId = -1) => {
+  const page = await browser.newPage();
 
   await page.goto(PAGE_URL, { waitUntil: 'networkidle2' });
 
-  const id = await memory.saveCheckpoint(page);
-  await analyseCheckpoint(page, id);
+  let id = checkpointId === -1 ? await memory.saveCheckpoint(page) : checkpointId;
+  await detectCheckpointTriggersById(page, id);
   await generateCheckpointEvents(browser, page, id);
 
-  // await browser.close();
+  page.close();
+}
 
-  console.timeEnd('analysis');
-})();
-
-const analyseCheckpoint = async(page, checkpointId) => {
+const detectCheckpointTriggersById = async(page, checkpointId) => {
   console.time('analyse checkpoint');
 
   const matches = await detector.detectTriggers(page);
@@ -56,7 +57,7 @@ const analyseCheckpoint = async(page, checkpointId) => {
 }
 
 const generateCheckpointEvents = async (browser, page, checkpointId) => {
-  const checkpoint = memory.getCheckpointById(checkpointId);
+  // const checkpoint = memory.getCheckpointById(checkpointId);
   // console.time('generate events sequential');
   // const mutationsSequential = await generator.generateEventsSequential(browser, page, checkpoint);
   // console.timeEnd('generate events sequential');
@@ -66,9 +67,10 @@ const generateCheckpointEvents = async (browser, page, checkpointId) => {
   // console.timeEnd('generate events parallel');
   // console.log(mutationsParallel);
   console.time('generate events tabs');
-  await generator.generateEventsTabs(browser, checkpoint);
+  await generator.generateEventsTabs(browser, checkpointId);
   console.timeEnd('generate events tabs');
   console.log(memory.print());
+  memory.saveToFile();
 }
 
 const printHTMLTriggersAnalysis = (htmlTriggers) => {

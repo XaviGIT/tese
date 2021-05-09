@@ -1,4 +1,5 @@
 const memory = require('./checkpoint-memory');
+const detector = require('./interactions-detector');
 
 const triggerEvent = async (page, elem, mutations) => {
   await page.evaluate(async (entry) => {
@@ -67,7 +68,8 @@ const generateEventsParallel = async (browser, page, checkpoint) => {
   return mutations;
 };
 
-const generateEventsTabs = async (browser, checkpoint) => {
+const generateEventsTabs = async (browser, checkpointId) => {
+  const checkpoint = memory.getCheckpointById(checkpointId);
   const {id, url, triggers} = checkpoint;
 
   await Promise.all(triggers.map(async (trigger) => {
@@ -79,15 +81,27 @@ const generateEventsTabs = async (browser, checkpoint) => {
     await preventExternalInteractions(page, url);
     await exposeMutations(page, mutations, trigger);
     await triggerEvent(page, trigger, mutations);
+    trigger.tested = true;
 
     setTimeout(async() => {
       if (mutations.length > 0) {
         const newId = await memory.saveCheckpoint(page, id, mutations);
         memory.updateCheckpointNextById(id, newId);
+        if (!memory.isCheckpointTested(newId)) {
+            // TODO: continue evaluation
+          // await detector.detectTriggers(page);
+          // await generateEventsTabs(browser, newId);
+        } else {
+          page.close();
+        }
+      } else {
+        page.close();
       }
-      page.close();
+
     }, 500);
   }));
+
+  checkpoint.tested = true;
 }
 
 const preventExternalInteractions = async(page, url) => {

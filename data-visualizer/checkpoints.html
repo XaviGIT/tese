@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+
+    <title>Checkpoints Visualizer</title>
+
+    <style>
+      .node {
+        cursor: pointer;
+      }
+
+      .node circle {
+        fill: #fff;
+        stroke: steelblue;
+        stroke-width: 3px;
+      }
+
+      .node text {
+        font: 12px sans-serif;
+      }
+
+      .link {
+        fill: none;
+        stroke: #ccc;
+        stroke-width: 2px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- load the d3.js library -->
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+
+    <script>
+      // fetch("../pwa-accessibility/data.json")
+      fetch("data.json")
+        .then((response) => response.json())
+        .then((json) => {
+          //const preNodes = json.map((el) => el);
+
+          console.log(json);
+        });
+    </script>
+  </body>
+</html>
