@@ -1,4 +1,5 @@
 const fs = require('fs');
+const memory = require('./checkpoint-memory');
 
 // list of triggers we want to search for
 const TRIGGERS = [
@@ -61,15 +62,10 @@ const EVENTS = [
 // transforms list of triggers into string
 const allTriggersSelector = TRIGGERS.map(({selector }) => selector).join(', ');
 
-const detect = async(page) => {
-  console.log('\nDetecting elements who trigger interactions...');
+const detect = async(page, checkpointId) => {
+  console.log(`\nDetecting elements who trigger interactions for checkpoint ${checkpointId}`);
 
-  console.time('add event listeners');
-  const preload = fs.readFileSync(__dirname+'/preload.js', 'utf8');
-  page.evaluateOnNewDocument(preload);
-  await page.reload();
-  console.timeEnd('add event listeners');
-
+  // await preparePageToDetection(page, checkpointId);
   await page.addScriptTag({ path: 'lib/utils.js'});
 
   const htmlTriggers = await detectHTMLTriggers(page);
@@ -81,11 +77,31 @@ const detect = async(page) => {
     ...eventListeners.filter(({ xpath }) => !resultSet.has(xpath))
   ];
 
+  memory.updateCheckpointTriggersById(checkpointId, combined);
+  printInteractionsAnalysis(combined, checkpointId);
+
   return {
     htmlTriggers,
     eventListeners,
     combined
   };
+}
+
+const preparePageToDetection = async(page, checkpointId) => {
+  const checkpoint = memory.getCheckpointById(checkpointId);
+
+  // console.time('add event listeners');
+  const preload = fs.readFileSync(__dirname+'/preload.js', 'utf8');
+  page.evaluateOnNewDocument(preload);
+  await page.goto(checkpoint.url, { waitUntil: 'networkidle2' });
+  // console.timeEnd('add event listeners');
+
+  await page.addScriptTag({ path: 'lib/utils.js'});
+}
+
+const printInteractionsAnalysis = (combined, checkpointId) => {
+  console.log(`Interactions detected for checkpoint with id ${checkpointId}:`);
+  console.table(combined);
 }
 
 const detectHTMLTriggers = async(page) => {
@@ -115,9 +131,7 @@ const listAllEventListeners = (events) => {
   const documentElements = Array.prototype.slice.call(document.querySelectorAll('body *'));
 
   let listeners = [];
-  for (let i = 0; i < documentElements.length; i++) {
-    const currentElement = documentElements[i];
-
+  for (let currentElement of documentElements) {
     const elementListeners = {
       'xpath': getXPathForElement(currentElement),
       'tag': currentElement.tagName,

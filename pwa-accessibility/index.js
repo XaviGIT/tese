@@ -14,6 +14,7 @@ const NON_HEADLESS_CONFIG = {
   "--disable-gpu"],
   ignoreHTTPSErrors: true,
   headless: false,
+  defaultViewport: null
 };
 
 // const PAGE_URL = 'https://getbootstrap.com/docs/5.0/components/dropdowns/';
@@ -34,24 +35,28 @@ const PAGE_URL = process.argv[2];
 const analyseCheckpoint = async(browser, url, checkpointId = -1) => {
   const page = await browser.newPage();
 
-  await page.goto(PAGE_URL, { waitUntil: 'networkidle2' });
+  console.time('add event listeners');
+  const preload = fs.readFileSync(__dirname+'/lib/preload.js', 'utf8');
+  page.evaluateOnNewDocument(preload);
+  console.timeEnd('add event listeners');
+  await page.goto(url, { waitUntil: 'networkidle2' });
 
   let id = checkpointId === -1 ? await memory.saveCheckpoint(page) : checkpointId;
+
   await detectCheckpointTriggersById(page, id);
   await generateCheckpointEvents(browser, page, id);
 
-  page.close();
+  // page.close();
 }
 
 const detectCheckpointTriggersById = async(page, checkpointId) => {
   console.time('analyse checkpoint');
 
-  const matches = await detector.detectTriggers(page);
+  const matches = await detector.detectTriggers(page, checkpointId);
 
   // printHTMLTriggersAnalysis(matches.htmlTriggers);
   // printEventListenersAnalysis(matches.eventListeners);
-  printCompleteAnalysis(matches.combined);
-  memory.updateCheckpointTriggersById(checkpointId, matches.combined);
+  // printCompleteAnalysis(matches.combined);
 
   console.timeEnd('analyse checkpoint');
 }
@@ -69,7 +74,7 @@ const generateCheckpointEvents = async (browser, page, checkpointId) => {
   console.time('generate events tabs');
   await generator.generateEventsTabs(browser, checkpointId);
   console.timeEnd('generate events tabs');
-  console.log(memory.print());
+  // console.log(memory.print());
   memory.saveToFile();
 }
 
@@ -81,9 +86,4 @@ const printHTMLTriggersAnalysis = (htmlTriggers) => {
 const printEventListenersAnalysis = (eventListeners) => {
   console.log(`Event listeners: ${eventListeners.length}`);
   console.table(eventListeners);
-}
-
-const printCompleteAnalysis = (combined) => {
-  console.log('Interactions detected:');
-  console.table(combined);
 }

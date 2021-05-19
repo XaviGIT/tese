@@ -1,23 +1,14 @@
+const fs = require('fs');
 const memory = require('./checkpoint-memory');
 const detector = require('./interactions-detector');
 
 const triggerEvent = async (page, elem, mutations) => {
-  await page.evaluate(async (entry) => {
+  const measures = await page.evaluate(async (entry) => {
+    const element = document
+      .evaluate(entry.xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
+      .singleNodeValue;
 
-    const newMutations = await new Promise((resolve, reject) => {
-      const config = { characterData: true, attributes: true, childList: true, subtree: true };
-      const MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
-      const observer = new MutationObserver((changes) => {
-        resolve(changes);
-      });
-      observer.observe(document.querySelector('body'), config);
-
-      const element = document
-        .evaluate(entry.xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
-        .singleNodeValue;
-      element.click();
-      setTimeout(() => resolve([]), 500);
-    });
+    const { x, y, width, height } = element.getBoundingClientRect();
 
     const nodesToText = (arr) => {
       const result = [];
@@ -29,12 +20,26 @@ const triggerEvent = async (page, elem, mutations) => {
       return result;
     };
 
-    newMutations.forEach(({ type, addedNodes, removedNodes, attributeName }) => {
-      updateMutations(type, nodesToText(addedNodes), nodesToText(removedNodes), attributeName);
+    const config = { characterData: true, attributes: true, childList: true, subtree: true };
+    const MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
+    const observer = new MutationObserver((changes) => {
+        changes.forEach(({ type, target, addedNodes, removedNodes, attributeName }) => {
+        updateMutations(type, nodesToText([target]), nodesToText(addedNodes), nodesToText(removedNodes), attributeName);
+      });
     });
+    observer.observe(document.querySelector('body'), config);
 
-    return;
+    return `${x},${y},${width},${height}`;
   }, elem);
+
+  const measuresArr = measures.split(',');
+  // we're targeting the middle of the trigger
+  const mouseX = parseInt(measuresArr[0]) + (parseInt(measuresArr[2]) / 2);
+  const mouseY = parseInt(measuresArr[1]) + (parseInt(measuresArr[3]) / 2);
+  // const mouseX = parseInt(measuresArr[0]);
+  // const mouseY = parseInt(measuresArr[1]);
+  await page.mouse.click(mouseX, mouseY);
+  // element.click();
 };
 
 const generateEventsSequential = async (browser, page, checkpoint) => {
@@ -70,38 +75,47 @@ const generateEventsParallel = async (browser, page, checkpoint) => {
 
 const generateEventsTabs = async (browser, checkpointId) => {
   const checkpoint = memory.getCheckpointById(checkpointId);
-  const {id, url, triggers} = checkpoint;
+  const {id, url, triggers, tested} = checkpoint;
 
-  await Promise.all(triggers.map(async (trigger) => {
-    const mutations = [];
-    const page = await browser.newPage();
-    await page.goto(url, { waitUntil: 'networkidle2' });
-    await page.addScriptTag({ path: 'lib/utils.js'});
+  if (!tested) {
+    await Promise.all(triggers.filter(trigger => !trigger.tested)
+      .map(async (trigger) => {
+        const mutations = [];
+        const page = await browser.newPage();
 
-    await preventExternalInteractions(page, url);
-    await exposeMutations(page, mutations, trigger);
-    await triggerEvent(page, trigger, mutations);
-    trigger.tested = true;
+        // console.time('add event listeners');
+        const preload = fs.readFileSync(__dirname+'/preload.js', 'utf8');
+        page.evaluateOnNewDocument(preload);
+        // console.timeEnd('add event listeners');
 
-    setTimeout(async() => {
-      if (mutations.length > 0) {
-        const newId = await memory.saveCheckpoint(page, id, mutations);
-        memory.updateCheckpointNextById(id, newId);
-        if (!memory.isCheckpointTested(newId)) {
-            // TODO: continue evaluation
-          // await detector.detectTriggers(page);
-          // await generateEventsTabs(browser, newId);
-        } else {
+        await page.goto(url, { waitUntil: 'networkidle2' });
+        await page.addScriptTag({ path: 'lib/utils.js'});
+
+        await preventExternalInteractions(page, url);
+        await exposeMutations(page, mutations, trigger);
+        await triggerEvent(page, trigger, mutations);
+        trigger.tested = true;
+
+        setTimeout(async() => {
+          if (mutations.length > 0) {
+            // console.table(mutations);
+            const newId = await memory.saveCheckpoint(page, id, mutations);
+            memory.updateCheckpointNextById(id, newId);
+            if (!memory.isCheckpointTested(newId)) {
+              // run again
+              await detector.detectTriggers(page, newId);
+              await generateEventsTabs(browser, newId);
+              memory.print();
+            }
+          }
           page.close();
-        }
-      } else {
-        page.close();
+
+        }, 500);
       }
+    ));
 
-    }, 500);
-  }));
-
-  checkpoint.tested = true;
+    checkpoint.tested = true;
+  }
 }
 
 const preventExternalInteractions = async(page, url) => {
@@ -120,9 +134,10 @@ const preventExternalInteractions = async(page, url) => {
 }
 
 const exposeMutations = async(page, mutations, trigger) => {
-  await page.exposeFunction('updateMutations', (type, addedNodes, removedNodes, attributeName) => {
+  await page.exposeFunction('updateMutations', (type, target, addedNodes, removedNodes, attributeName) => {
     mutations.push({
       type,
+      target,
       addedNodes,
       removedNodes,
       attributeName,

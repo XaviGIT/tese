@@ -36,18 +36,19 @@
   </head>
   <body>
     <h1>Testing</h1>
-    <p id="content-editable" contenteditable="true">This is a webpage used for testing purposes</p>
+    <!-- <p id="content-editable" contenteditable="true">This is a webpage used for testing purposes</p>
     <p id="content-not-editable">Just use it at your own risk!</p>
     <form>
       <div id="trigger1">Div with click added by addEventListener</div>
       <div id="trigger2">Div with click added by jQuery click</div>
       <div id="trigger3" onclick="customClick('div onclick')">Div with click added by onclick</div>
-      <div class="trigger4">Div with click added by addEventListener using class</div>
+      <div class="trigger4">Div with click added by addEventListener using class</div> -->
       <!-- <button onclick="customClick('button onclick')">Button with click added by onclick</button> -->
-      <div id="trigger5" role="button">Show secret message...</div>
+      <!-- <div id="trigger5" role="button">Show secret message...</div> -->
       <!-- <button onclick="changePage(event)">Button that changes page</button> -->
     </form>
 
+    <!-- accordion example -->
     <div class="accordion" id="accordionExample">
       <div class="accordion-item">
         <h2 class="accordion-header" id="headingOne">
@@ -71,6 +72,7 @@
           </div>
         </div>
       </div>
+      <!--
       <div class="accordion-item">
         <h2 class="accordion-header" id="headingTwo">
           <button
@@ -115,7 +117,31 @@
           </div>
         </div>
       </div>
+      -->
     </div>
+    <!-- end accordion example -->
+
+    <!-- modal example -->
+    <!-- Button trigger modal -->
+    <!-- <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">Launch demo modal</button> -->
+
+    <!-- Modal -->
+    <!-- <div class="modal" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">...</div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary">Save changes</button>
+          </div>
+        </div>
+      </div>
+    </div> -->
+    <!-- end modal example -->
 
     <script
       src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
@@ -124,22 +150,22 @@
     ></script>
     <script type="text/javascript">
       run = () => {
-        const trigger1 = document.body.querySelector("#trigger1");
-        trigger1.addEventListener("click", () => {
-          console.log("div addEventListener");
-        });
+        // const trigger1 = document.body.querySelector("#trigger1");
+        // trigger1.addEventListener("click", () => {
+        //   console.log("div addEventListener");
+        // });
 
-        $("#trigger2").click(() => {
-          console.log("div jQuery click");
-        });
+        // $("#trigger2").click(() => {
+        //   console.log("div jQuery click");
+        // });
 
-        const trigger4 = document.body.querySelector(".trigger4");
-        trigger4.addEventListener("click", () => {
-          console.log("div addEventListener with class");
-        });
+        // const trigger4 = document.body.querySelector(".trigger4");
+        // trigger4.addEventListener("click", () => {
+        //   console.log("div addEventListener with class");
+        // });
 
-        const trigger5 = document.body.querySelector("#trigger5");
-        trigger5.addEventListener("click", showSecret);
+        // const trigger5 = document.body.querySelector("#trigger5");
+        // trigger5.addEventListener("click", showSecret);
       };
 
       customClick = (msg) => {
@@ -160,6 +186,13 @@
         document.body.appendChild(msg);
         document.body.querySelector("#trigger5").style.backgroundColor = "red";
       };
+
+      // const config = { characterData: true, attributes: true, childList: true, subtree: true };
+      // const MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
+      // const observer = new MutationObserver((changes) => {
+      //   console.log(changes);
+      // });
+      // observer.observe(document.querySelector("body"), config);
 
       window.onload = run;
     </script>
