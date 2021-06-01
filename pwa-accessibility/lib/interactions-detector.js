@@ -78,7 +78,7 @@ const detect = async(page, checkpointId) => {
   ];
 
   memory.updateCheckpointTriggersById(checkpointId, combined);
-  printInteractionsAnalysis(combined, checkpointId);
+  // printInteractionsAnalysis(combined, checkpointId);
 
   return {
     htmlTriggers,

@@ -36,15 +36,15 @@
   </head>
   <body>
     <h1>Testing</h1>
-    <!-- <p id="content-editable" contenteditable="true">This is a webpage used for testing purposes</p>
+    <p id="content-editable" contenteditable="true">This is a webpage used for testing purposes</p>
     <p id="content-not-editable">Just use it at your own risk!</p>
     <form>
       <div id="trigger1">Div with click added by addEventListener</div>
       <div id="trigger2">Div with click added by jQuery click</div>
       <div id="trigger3" onclick="customClick('div onclick')">Div with click added by onclick</div>
-      <div class="trigger4">Div with click added by addEventListener using class</div> -->
+      <!-- <div class="trigger4">Div with click added by addEventListener using class</div> -->
       <!-- <button onclick="customClick('button onclick')">Button with click added by onclick</button> -->
-      <!-- <div id="trigger5" role="button">Show secret message...</div> -->
+      <div id="trigger5" role="button">Show secret message...</div>
       <!-- <button onclick="changePage(event)">Button that changes page</button> -->
     </form>
 
@@ -72,7 +72,6 @@
           </div>
         </div>
       </div>
-      <!--
       <div class="accordion-item">
         <h2 class="accordion-header" id="headingTwo">
           <button
@@ -117,7 +116,6 @@
           </div>
         </div>
       </div>
-      -->
     </div>
     <!-- end accordion example -->
 
@@ -150,22 +148,19 @@
     ></script>
     <script type="text/javascript">
       run = () => {
-        // const trigger1 = document.body.querySelector("#trigger1");
-        // trigger1.addEventListener("click", () => {
-        //   console.log("div addEventListener");
-        // });
-
-        // $("#trigger2").click(() => {
-        //   console.log("div jQuery click");
-        // });
-
-        // const trigger4 = document.body.querySelector(".trigger4");
-        // trigger4.addEventListener("click", () => {
-        //   console.log("div addEventListener with class");
-        // });
-
-        // const trigger5 = document.body.querySelector("#trigger5");
-        // trigger5.addEventListener("click", showSecret);
+        const trigger1 = document.body.querySelector("#trigger1");
+        trigger1?.addEventListener("click", () => {
+          console.log("div addEventListener");
+        });
+        $("#trigger2").click(() => {
+          console.log("div jQuery click");
+        });
+        const trigger4 = document.body.querySelector(".trigger4");
+        trigger4?.addEventListener("click", () => {
+          console.log("div addEventListener with class");
+        });
+        const trigger5 = document.body.querySelector("#trigger5");
+        trigger5?.addEventListener("click", showSecret);
       };
 
       customClick = (msg) => {

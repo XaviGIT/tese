@@ -75,9 +75,11 @@ const generateEventsParallel = async (browser, page, checkpoint) => {
 
 const generateEventsTabs = async (browser, checkpointId) => {
   const checkpoint = memory.getCheckpointById(checkpointId);
-  const {id, url, triggers, tested} = checkpoint;
+  const {id, url, triggers, path, tested} = checkpoint;
 
   if (!tested) {
+    checkpoint.tested = true;
+
     await Promise.all(triggers.filter(trigger => !trigger.tested)
       .map(async (trigger) => {
         const mutations = [];
@@ -91,30 +93,55 @@ const generateEventsTabs = async (browser, checkpointId) => {
         await page.goto(url, { waitUntil: 'networkidle2' });
         await page.addScriptTag({ path: 'lib/utils.js'});
 
+        const navigateToCheckpoint = async(path) => {
+          await path.reduce(async (memo, state) => {
+            await memo;
+            await triggerEvent(page, state.trigger);
+            await new Promise(resolve => setTimeout(resolve, 5000));
+          }, undefined);
+        }
+
+        if (path.length !== 0) { // root checkpoint
+          await navigateToCheckpoint(path);
+        }
+
         await preventExternalInteractions(page, url);
         await exposeMutations(page, mutations, trigger);
         await triggerEvent(page, trigger, mutations);
         trigger.tested = true;
 
-        setTimeout(async() => {
+        const checkMutations = async(mutations, memory, oldId, trigger) => {
           if (mutations.length > 0) {
-            // console.table(mutations);
-            const newId = await memory.saveCheckpoint(page, id, mutations);
-            memory.updateCheckpointNextById(id, newId);
-            if (!memory.isCheckpointTested(newId)) {
+            const newPath = [{
+              id,
+              trigger
+            }].concat(path);
+            const newId = await memory.saveCheckpoint(page, newPath);
+
+            memory.updateCheckpointPrevById(newId, {
+              id: oldId,
+              trigger
+            });
+
+            memory.updateCheckpointNextById(id, {
+              id: newId,
+              trigger,
+              mutations
+            });
+
+            if (!memory.isCheckpointTested(newId) && memory.testCounter === 1) {
               // run again
               await detector.detectTriggers(page, newId);
               await generateEventsTabs(browser, newId);
-              memory.print();
             }
           }
-          page.close();
+        }
 
-        }, 500);
+        await new Promise(resolve => setTimeout(resolve, 5000)); // needs to wait for  mutations to appear
+        await checkMutations(mutations, memory, id, trigger);
+        page.close();
       }
     ));
-
-    checkpoint.tested = true;
   }
 }
 
