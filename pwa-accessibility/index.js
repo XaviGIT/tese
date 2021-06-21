@@ -56,6 +56,7 @@ const analyseCheckpoint = async(browser, url, checkpointId = -1) => {
 
   let id = checkpointId === -1 ? await memory.saveCheckpoint(page, []) : checkpointId;
 
+  await page.screenshot({path: `./results/${id}.png`});
   await detectCheckpointTriggersById(page, id);
   await generateCheckpointEvents(browser, page, id);
 
@@ -90,7 +91,7 @@ const generateCheckpointEvents = async (browser, page, checkpointId) => {
   console.timeEnd('generate events tabs');
   // console.log(`--------end--------`)
   memory.print();
-  // memory.saveToFile();
+  memory.saveToFile();
 }
 
 const printHTMLTriggersAnalysis = (htmlTriggers) => {

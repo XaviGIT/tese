@@ -1,4 +1,6 @@
-const hash = require('object-hash');
+// const hash = require('object-hash');
+const hash = require('../node_modules/tlsh/lib/tlsh');
+const DigestHashBuilder = require('../node_modules/tlsh/lib/digests/digest-hash-builder');
 const files = require('./file-manager');
 
 class Memory {
@@ -18,8 +20,11 @@ class Memory {
   }
 
   createCheckpoint = async(id, url, path) => {
+    const digest = new DigestHashBuilder().withHash(id).build();
+
     this.memory[id] = {
       id,
+      digest,
       prev: [],
       url,
       triggers: [],
@@ -38,10 +43,16 @@ class Memory {
   saveCheckpoint = async(page, path) => {
     const id = await this.generateId(page);
     if (!this.hasCheckpointById(id)) {
+      const hasSimilar = await this.hasSimilarCheckpoint(id);
+      if (hasSimilar) {
+        return -1;
+      }
       const url = await page.url();
       this.createCheckpoint(id, url, path);
+    } else if (path.length < this.memory[id].path.length) {
+      this.memory[id].path = path;
     }
-    // TODO: update path if shorter
+
     return id;
   }
 
@@ -80,10 +91,11 @@ class Memory {
 
   print = () => {
     console.log(this.memory);
+    console.log(`Number of checkpoints: ${Object.keys(this.memory).length}`)
   }
 
   saveToFile = () => {
-    files.storeData(this.memory, './data.json');
+    files.storeData(this.memory, './results/data.json');
   }
 
   getCheckpointsNotTested = () => {
@@ -102,6 +114,26 @@ class Memory {
     this.testCounter++;
 
     return this.memory[id].tested;
+  }
+
+  delay = (ms) => {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  hasSimilarCheckpoint = async(id) => {
+    const digest = new DigestHashBuilder().withHash(id).build();
+    const hasSimilar = await Object.keys(this.memory).some(otherId => {
+        const other = this.memory[otherId];
+        return digest !== other.digest &&
+        this.areCheckpointsSimilar(digest, other.digest)
+      });
+
+    return hasSimilar;
+  }
+
+  areCheckpointsSimilar = (digest1, digest2) => {
+    const difference = digest2.calculateDifference(digest1, true);
+    return difference <= 2; // custom value, read more in https://github.com/idealista/tlsh-js
   }
 
   getCheckpointPathById = (id, path = []) => {

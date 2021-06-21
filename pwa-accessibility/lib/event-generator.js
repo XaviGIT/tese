@@ -36,8 +36,6 @@ const triggerEvent = async (page, elem, mutations) => {
   // we're targeting the middle of the trigger
   const mouseX = parseInt(measuresArr[0]) + (parseInt(measuresArr[2]) / 2);
   const mouseY = parseInt(measuresArr[1]) + (parseInt(measuresArr[3]) / 2);
-  // const mouseX = parseInt(measuresArr[0]);
-  // const mouseY = parseInt(measuresArr[1]);
   await page.mouse.click(mouseX, mouseY);
   // element.click();
 };
@@ -84,28 +82,33 @@ const generateEventsTabs = async (browser, checkpointId) => {
       .map(async (trigger) => {
         const mutations = [];
         const page = await browser.newPage();
-
-        // console.time('add event listeners');
         const preload = fs.readFileSync(__dirname+'/preload.js', 'utf8');
         page.evaluateOnNewDocument(preload);
-        // console.timeEnd('add event listeners');
 
         await page.goto(url, { waitUntil: 'networkidle2' });
         await page.addScriptTag({ path: 'lib/utils.js'});
+        await preventExternalInteractions(page, url);
+
+        const updatePageTitle = async(id) => {
+          await page.evaluate((id) => {
+            document.title = `Checkpoint ${id}`;
+          }, id);
+        }
 
         const navigateToCheckpoint = async(path) => {
           await path.reduce(async (memo, state) => {
             await memo;
             await triggerEvent(page, state.trigger);
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            await new Promise(resolve => setTimeout(resolve, 2500));
           }, undefined);
         }
+
+        updatePageTitle(id);
 
         if (path.length !== 0) { // root checkpoint
           await navigateToCheckpoint(path);
         }
 
-        await preventExternalInteractions(page, url);
         await exposeMutations(page, mutations, trigger);
         await triggerEvent(page, trigger, mutations);
         trigger.tested = true;
@@ -118,21 +121,26 @@ const generateEventsTabs = async (browser, checkpointId) => {
             }].concat(path);
             const newId = await memory.saveCheckpoint(page, newPath);
 
-            memory.updateCheckpointPrevById(newId, {
-              id: oldId,
-              trigger
-            });
+            if (newId !== -1) { // not saved
+              updatePageTitle(newId);
+              await page.screenshot({path: `./results/${newId}.png`});
 
-            memory.updateCheckpointNextById(id, {
-              id: newId,
-              trigger,
-              mutations
-            });
+              memory.updateCheckpointPrevById(newId, {
+                id: oldId,
+                trigger
+              });
 
-            if (!memory.isCheckpointTested(newId) && memory.testCounter === 1) {
-              // run again
-              await detector.detectTriggers(page, newId);
-              await generateEventsTabs(browser, newId);
+              memory.updateCheckpointNextById(id, {
+                id: newId,
+                trigger,
+                mutations
+              });
+
+              if (!memory.isCheckpointTested(newId)) {
+                // run again
+                await detector.detectTriggers(page, newId);
+                await generateEventsTabs(browser, newId);
+              }
             }
           }
         }
