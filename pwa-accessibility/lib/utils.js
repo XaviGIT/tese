@@ -72,3 +72,8 @@ const getSourceElementSelector = (element) => {
 
   return selector;
 }
+
+module.exports = {
+  getXPathForElement,
+  getElementByXPath
+}

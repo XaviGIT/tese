@@ -8,6 +8,7 @@ class Memory {
 
   constructor() {
     this.memory = {};
+    this.ads = [];
   }
 
   generateHash = (content) => {
@@ -133,7 +134,7 @@ class Memory {
 
   areCheckpointsSimilar = (digest1, digest2) => {
     const difference = digest2.calculateDifference(digest1, true);
-    return difference <= 2; // custom value, read more in https://github.com/idealista/tlsh-js
+    return difference <= 3; // custom value, read more in https://github.com/idealista/tlsh-js
   }
 
   getCheckpointPathById = (id, path = []) => {
@@ -155,6 +156,15 @@ class Memory {
     }
 
     return this.getCheckpointPathById(shortest.id, path);
+  }
+
+  // ads
+  getKnownAds = () => {
+    return this.ads;
+  }
+
+  addKnownAd = (ad) => {
+    this.ads.push(ad);
   }
 
 }

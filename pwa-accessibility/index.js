@@ -3,6 +3,7 @@ const puppeteer = require('puppeteer');
 const detector = require('./lib/interactions-detector');
 const generator = require('./lib/event-generator');
 const memory = require('./lib/checkpoint-memory');
+var beep = require('node-beep');
 
 const NON_HEADLESS_CONFIG = {
   args: [
@@ -37,21 +38,22 @@ const PAGE_URL = process.argv[2];
 
 (async () => {
   console.time('full run');
-  const browser = await puppeteer.launch(NON_HEADLESS_CONFIG);
+  const browser = await puppeteer.launch(HEADLESS_CONFIG);
 
-  analyseCheckpoint(browser, PAGE_URL);
+  await analyseCheckpoint(browser, PAGE_URL);
   // await browser.close();
 
   console.timeEnd('full run');
+  beep(1);
 })();
 
 const analyseCheckpoint = async(browser, url, checkpointId = -1) => {
   const page = await browser.newPage();
 
-  console.time('add event listeners');
+  // console.time('add event listeners');
   const preload = fs.readFileSync(__dirname+'/lib/preload.js', 'utf8');
   page.evaluateOnNewDocument(preload);
-  console.timeEnd('add event listeners');
+  // console.timeEnd('add event listeners');
   await page.goto(url, { waitUntil: 'networkidle2' });
 
   let id = checkpointId === -1 ? await memory.saveCheckpoint(page, []) : checkpointId;
@@ -65,7 +67,7 @@ const analyseCheckpoint = async(browser, url, checkpointId = -1) => {
 }
 
 const detectCheckpointTriggersById = async(page, checkpointId) => {
-  console.time('analyse checkpoint');
+  // console.time('analyse checkpoint');
 
   const matches = await detector.detectTriggers(page, checkpointId);
 
@@ -73,7 +75,7 @@ const detectCheckpointTriggersById = async(page, checkpointId) => {
   // printEventListenersAnalysis(matches.eventListeners);
   // printCompleteAnalysis(matches.combined);
 
-  console.timeEnd('analyse checkpoint');
+  // console.timeEnd('analyse checkpoint');
 }
 
 const generateCheckpointEvents = async (browser, page, checkpointId) => {
@@ -86,9 +88,9 @@ const generateCheckpointEvents = async (browser, page, checkpointId) => {
   // const mutationsParallel = await generator.generateEventsParallel(browser, page, checkpoint);
   // console.timeEnd('generate events parallel');
   // console.log(mutationsParallel);
-  console.time('generate events tabs');
+  // console.time('generate events tabs');
   await generator.generateEventsTabs(browser, checkpointId);
-  console.timeEnd('generate events tabs');
+  // console.timeEnd('generate events tabs');
   // console.log(`--------end--------`)
   memory.print();
   memory.saveToFile();

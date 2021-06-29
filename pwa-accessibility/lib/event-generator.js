@@ -1,6 +1,8 @@
 const fs = require('fs');
+const lineReader = require('linebyline');
 const memory = require('./checkpoint-memory');
 const detector = require('./interactions-detector');
+const getElementByXPath = require('./utils');
 
 const triggerEvent = async (page, elem, mutations) => {
   const measures = await page.evaluate(async (entry) => {
@@ -8,6 +10,7 @@ const triggerEvent = async (page, elem, mutations) => {
       .evaluate(entry.xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
       .singleNodeValue;
 
+    element.scrollIntoView();
     const { x, y, width, height } = element.getBoundingClientRect();
 
     const nodesToText = (arr) => {
@@ -29,7 +32,7 @@ const triggerEvent = async (page, elem, mutations) => {
     });
     observer.observe(document.querySelector('body'), config);
 
-    return `${x},${y},${width},${height}`;
+    return `${x},${y},${width},${height},${element.offsetTop}`;
   }, elem);
 
   const measuresArr = measures.split(',');
@@ -88,6 +91,7 @@ const generateEventsTabs = async (browser, checkpointId) => {
         await page.goto(url, { waitUntil: 'networkidle2' });
         await page.addScriptTag({ path: 'lib/utils.js'});
         await preventExternalInteractions(page, url);
+        await removeAds(page);
 
         const updatePageTitle = async(id) => {
           await page.evaluate((id) => {
@@ -151,6 +155,37 @@ const generateEventsTabs = async (browser, checkpointId) => {
       }
     ));
   }
+}
+
+const removeAds = async(page) => {
+  const rl = lineReader('ads.txt');
+  const ads = [];
+
+  rl.on('line', (line, lineCount, byteCount) => {
+    ads.push(line);
+  }).on('error', (err) => {
+      console.error(err);
+  });
+
+  const knownAds = memory.getKnownAds();
+  await page.evaluate((ads) => {
+    ads.forEach(xpath => {
+      const ad = document
+        .evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
+        .singleNodeValue;
+
+      ad.remove();
+    });
+  }, knownAds);
+
+  const frames = await page.mainFrame()
+    .childFrames()
+    .forEach(f => {
+      if (ads.find(ad => f.url().includes(ad))) {
+        const xpath = getXPathForElement(f);
+        memory.addKnownAd(xpath);
+      }
+    });
 }
 
 const preventExternalInteractions = async(page, url) => {

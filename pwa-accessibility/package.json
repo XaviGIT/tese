@@ -10,6 +10,8 @@
   "author": "Paulo Vieira",
   "license": "ISC",
   "dependencies": {
+    "@qualweb/cli": "^0.6.1",
+    "node-beep": "^0.0.3",
     "object-hash": "^2.1.1",
     "puppeteer": "^5.5.0",
     "sha1": "^1.1.1",
