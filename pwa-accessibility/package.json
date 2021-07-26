@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "debug": "node --inspect index.js"
+    "debug": "node --inspect index.js",
+    "evaluate": "node index-evaluation.js"
   },
   "author": "Paulo Vieira",
   "license": "ISC",

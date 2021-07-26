@@ -1,5 +1,5 @@
-// const hash = require('object-hash');
-const hash = require('../node_modules/tlsh/lib/tlsh');
+const hash = require('object-hash');
+// const hash = require('../node_modules/tlsh/lib/tlsh');
 const DigestHashBuilder = require('../node_modules/tlsh/lib/digests/digest-hash-builder');
 const files = require('./file-manager');
 
@@ -44,10 +44,10 @@ class Memory {
   saveCheckpoint = async(page, path) => {
     const id = await this.generateId(page);
     if (!this.hasCheckpointById(id)) {
-      const hasSimilar = await this.hasSimilarCheckpoint(id);
-      if (hasSimilar) {
-        return -1;
-      }
+      // const hasSimilar = await this.hasSimilarCheckpoint(id);
+      // if (hasSimilar) {
+      //   return -1;
+      // }
       const url = await page.url();
       this.createCheckpoint(id, url, path);
     } else if (path.length < this.memory[id].path.length) {

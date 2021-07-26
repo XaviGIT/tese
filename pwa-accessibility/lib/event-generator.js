@@ -219,20 +219,6 @@ const exposeMutations = async(page, mutations, trigger) => {
 module.exports = {
   generateEventsSequential,
   generateEventsParallel,
-  generateEventsTabs
+  generateEventsTabs,
+  triggerEvent
 };
-
-// await page.exposeFunction('triggerEvent', (element, events) => {
-  //     if (element && events) {
-
-  //       trigger.events.forEach(evt => {
-  //         console.log(`Triggering event ${evt} in element #${trigger.element}`);
-  //         switch(evt) {
-  //           case 'click':
-  //             page.click(`#${trigger.element}`);
-  //             break;
-  //           default: break;
-  //         }
-  //       });
-  //     }
-  // });

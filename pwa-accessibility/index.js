@@ -3,7 +3,7 @@ const puppeteer = require('puppeteer');
 const detector = require('./lib/interactions-detector');
 const generator = require('./lib/event-generator');
 const memory = require('./lib/checkpoint-memory');
-var beep = require('node-beep');
+const beep = require('node-beep');
 
 const NON_HEADLESS_CONFIG = {
   args: [
