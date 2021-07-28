@@ -20,9 +20,12 @@ const readFile = async(path) => {
   const raw = fs.readFileSync(path, 'utf8');
   try {
     const data = JSON.parse(raw);
-    const test = Object.keys(data)[1];
-    console.log(test)
-    return evaluateCheckpoint(data[test]);
+    const checkpoints = Object.keys(data);
+    const browser = await puppeteer.launch(NON_HEADLESS_CONFIG);
+    await Promise.all(checkpoints.map(async (checkpointId) => {
+      await evaluateCheckpoint(browser, data[checkpointId])
+    }));
+    browser.close();
   } catch (err) {
     console.err(`Couldn't read file ${path}`);
   }
@@ -37,67 +40,53 @@ const navigateToCheckpoint = async(page, checkpoint) => {
 }
 
 const preparePage = async(page) => {
+  await page.addScriptTag({
+    path: require.resolve('@qualweb/qw-page/dist/qw-page.bundle.js'),
+    type: 'text/javascript'
+  });
 
+  await page.addScriptTag({
+    path: require.resolve('@qualweb/util/dist/util.bundle.js'),
+    type: 'text/javascript'
+  });
+
+  await page.addScriptTag({
+    path: require.resolve('@qualweb/act-rules/dist/act.bundle.js'),
+    type: 'text/javascript'
+  });
+
+  await page.addScriptTag({
+    path: require.resolve('@qualweb/wcag-techniques/dist/wcag.bundle.js'),
+    type: 'text/javascript'
+  });
 }
 
-const evaluateCheckpoint = async(checkpoint) => {
-  const browser = await puppeteer.launch(NON_HEADLESS_CONFIG);
+const executeACT = async(page) => {
+  return await page.evaluate(() => {
+    window.act.executeAtomicRules();
+    window.act.executeCompositeRules();
+    return window.act.getReport();
+  });
+}
+
+const executeWCAG = async(page) => {
+  return await page.evaluate(() => {
+    const html = new WCAG.WCAGTechniques();
+    return html.execute(false);
+  });
+};
+
+const evaluateCheckpoint = async(browser, checkpoint) => {
   const page = await browser.newPage();
   await page.goto(TEST_PAGE_URL, { waitUntil: 'networkidle2' });
   await navigateToCheckpoint(page, checkpoint);
 
-  const executeWCAG = async(validation, options) => {
-    await page.addScriptTag({
-      path: require.resolve('@qualweb/qw-page/dist/qw-page.bundle.js'),
-      type: 'text/javascript'
-    });
+  await preparePage(page);
+  checkpoint.evaluations = new Array();
+  checkpoint.evaluations.push(await executeACT(page));
+  checkpoint.evaluations.push(await executeWCAG(page));
 
-    await page.addScriptTag({
-      path: require.resolve('@qualweb/util/dist/util.bundle.js'),
-      type: 'text/javascript'
-    });
-
-    await page.addScriptTag({
-      path: require.resolve('@qualweb/act-rules/dist/act.bundle.js'),
-      type: 'text/javascript'
-    });
-
-    await page.addScriptTag({
-      path: require.resolve('@qualweb/wcag-techniques/dist/wcag.bundle.js'),
-      type: 'text/javascript'
-    });
-
-    // const newTabWasOpen = await this.detectIfUnwantedTabWasOpened();
-    const newTabWasOpen = false;
-
-    return await page.evaluate(
-      (newTabWasOpen, validation, options) => {
-        // if (options) {
-        //   window.wcag.configure(options);
-        // }
-
-        // window.wcag = new WCAG.WCAGTechniques(options);
-        // return window.wcag.execute(newTabWasOpen, validation);
-        window.act.executeAtomicRules();
-        return window.act.getReport();
-      },
-      newTabWasOpen,
-      (validation ?? null),
-      options
-    );
-  };
-
-  const validation = undefined;
-  const options = {
-    "wcag-techniques": {
-      "rules": ["QW-WCAG-T1"],
-      "exclude": ["QW-WCAG-T2"],
-      "levels": ["A", "AA", "AAA"],
-      "principles": ["Perceivable", "Operable", "Understandable", "Robust"]
-    }
-  };
-  const result = await executeWCAG(validation, options['wcag-techniques']);
-  console.log(result);
+  await page.close();
 }
 
 module.exports = {
