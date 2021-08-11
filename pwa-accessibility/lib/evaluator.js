@@ -1,9 +1,8 @@
 const fs = require('fs');
 const puppeteer = require('puppeteer');
+const files = require('./file-manager');
 const worker = require('worker_threads');
-const { Dom } = require('@qualweb/dom');
-const { Evaluation } = require('@qualweb/evaluation/dist/index');
-const { ACT, WCAG } = require('@qualweb/core/dist/index');
+const { WCAG } = require('@qualweb/core/dist/index');
 const { triggerEvent } = require('./event-generator');
 const {
   NON_HEADLESS_CONFIG,
@@ -25,6 +24,7 @@ const readFile = async(path) => {
     await Promise.all(checkpoints.map(async (checkpointId) => {
       await evaluateCheckpoint(browser, data[checkpointId])
     }));
+    files.saveEvaluation(data);
     browser.close();
   } catch (err) {
     console.err(`Couldn't read file ${path}`);
@@ -39,7 +39,7 @@ const navigateToCheckpoint = async(page, checkpoint) => {
   }, undefined);
 }
 
-const preparePage = async(page) => {
+const preparePageForEvaluation = async(page) => {
   await page.addScriptTag({
     path: require.resolve('@qualweb/qw-page/dist/qw-page.bundle.js'),
     type: 'text/javascript'
@@ -81,7 +81,7 @@ const evaluateCheckpoint = async(browser, checkpoint) => {
   await page.goto(TEST_PAGE_URL, { waitUntil: 'networkidle2' });
   await navigateToCheckpoint(page, checkpoint);
 
-  await preparePage(page);
+  await preparePageForEvaluation(page);
   checkpoint.evaluations = new Array();
   checkpoint.evaluations.push(await executeACT(page));
   checkpoint.evaluations.push(await executeWCAG(page));

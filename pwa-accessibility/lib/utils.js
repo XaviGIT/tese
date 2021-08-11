@@ -1,5 +1,9 @@
 const prefix = 'qualweb_';
 
+const takeScreenshot = async(page, type, name) => {
+  await page.screenshot({path: `./results/analysis/${type}-${name}.png`, fullPage: true});
+}
+
 const getElementId = (element) => {
   if(typeof element.id === 'undefined' || element.id === '') {
     const unique_id = `${performance.now()}`.replace('.', '_');
@@ -74,6 +78,7 @@ const getSourceElementSelector = (element) => {
 }
 
 module.exports = {
+  takeScreenshot,
   getXPathForElement,
   getElementByXPath
 }

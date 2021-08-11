@@ -2,9 +2,9 @@ const fs = require('fs');
 const lineReader = require('linebyline');
 const memory = require('./checkpoint-memory');
 const detector = require('./interactions-detector');
-const getElementByXPath = require('./utils');
+const utils = require('./utils');
 
-const triggerEvent = async (page, elem, mutations) => {
+const triggerEvent = async (page, elem) => {
   const measures = await page.evaluate(async (entry) => {
     const element = document
       .evaluate(entry.xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
@@ -12,6 +12,20 @@ const triggerEvent = async (page, elem, mutations) => {
 
     element.scrollIntoView();
     const { x, y, width, height } = element.getBoundingClientRect();
+
+    // const overlay = document.createElement('div');
+    // overlay.id = 'pwaAnalysisOverlay';
+    // overlay.style.cssText = `
+    //   display: block;
+    //   position: fixed;
+    //   left: ${x}px;
+    //   top: ${y}px;
+    //   width: ${width}px;
+    //   height: ${height}px;
+    //   background-color: red;
+    //   opacity: 0.2;
+    // `;
+    // document.body.appendChild(overlay);
 
     const nodesToText = (arr) => {
       const result = [];
@@ -35,6 +49,13 @@ const triggerEvent = async (page, elem, mutations) => {
     return `${x},${y},${width},${height},${element.offsetTop}`;
   }, elem);
 
+  // await utils.takeScreenshot(page, 'trigger', Date.now());
+
+  // await page.evaluate(() => {
+  //   const overlay = document.getElementById('pwaAnalysisOverlay');
+  //   overlay.parentNode.removeChild(overlay);
+  // });
+
   const measuresArr = measures.split(',');
   // we're targeting the middle of the trigger
   const mouseX = parseInt(measuresArr[0]) + (parseInt(measuresArr[2]) / 2);
@@ -53,7 +74,7 @@ const generateEventsSequential = async (browser, page, checkpoint) => {
 
   await triggers.reduce(async (memo, trigger) => {
     await memo;
-    await triggerEvent(page, trigger, mutations);
+    await triggerEvent(page, trigger);
   }, undefined);
 
   return mutations;
@@ -68,7 +89,7 @@ const generateEventsParallel = async (browser, page, checkpoint) => {
   await exposeMutations(page, mutations);
 
   await Promise.all(triggers.map(async (trigger) => {
-    await triggerEvent(page, trigger, mutations);
+    await triggerEvent(page, trigger);
   }));
 
   return mutations;
@@ -114,10 +135,10 @@ const generateEventsTabs = async (browser, checkpointId) => {
         }
 
         await exposeMutations(page, mutations, trigger);
-        await triggerEvent(page, trigger, mutations);
+        await triggerEvent(page, trigger);
         trigger.tested = true;
 
-        const checkMutations = async(mutations, memory, oldId, trigger) => {
+        const checkMutations = async(mutations, memory, utils, oldId, trigger) => {
           if (mutations.length > 0) {
             const newPath = [{
               id,
@@ -127,7 +148,7 @@ const generateEventsTabs = async (browser, checkpointId) => {
 
             if (newId !== -1) { // not saved
               updatePageTitle(newId);
-              await page.screenshot({path: `./results/${newId}.png`});
+              await utils.takeScreenshot(page, 'mutation', newId);
 
               memory.updateCheckpointPrevById(newId, {
                 id: oldId,
@@ -150,7 +171,7 @@ const generateEventsTabs = async (browser, checkpointId) => {
         }
 
         await new Promise(resolve => setTimeout(resolve, 5000)); // needs to wait for  mutations to appear
-        await checkMutations(mutations, memory, id, trigger);
+        await checkMutations(mutations, memory, utils, id, trigger);
         page.close();
       }
     ));

@@ -1,5 +1,8 @@
 const fs = require('fs');
 
+const ANALYSIS_PATH = './results/analysis';
+const EVALUATIONS_PATH = './results/evaluation';
+
 const storeData = (data, path) => {
   try {
     fs.writeFileSync(path, JSON.stringify(data))
@@ -17,7 +20,17 @@ const loadData = (path) => {
   }
 }
 
+const saveAnalysis = (data) => {
+  storeData(data, `${ANALYSIS_PATH}/data.json`);
+}
+
+const saveEvaluation = (data) => {
+  storeData(data, `${EVALUATIONS_PATH}/result.json`);
+}
+
 module.exports = {
   storeData,
-  loadData
+  loadData,
+  saveAnalysis,
+  saveEvaluation
 }

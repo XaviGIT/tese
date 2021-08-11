@@ -3,6 +3,7 @@ const puppeteer = require('puppeteer');
 const detector = require('./lib/interactions-detector');
 const generator = require('./lib/event-generator');
 const memory = require('./lib/checkpoint-memory');
+const utils = require('./lib/utils');
 const beep = require('node-beep');
 
 const NON_HEADLESS_CONFIG = {
@@ -38,7 +39,7 @@ const PAGE_URL = process.argv[2];
 
 (async () => {
   console.time('full run');
-  const browser = await puppeteer.launch(HEADLESS_CONFIG);
+  const browser = await puppeteer.launch(NON_HEADLESS_CONFIG);
 
   await analyseCheckpoint(browser, PAGE_URL);
   // await browser.close();
@@ -58,7 +59,7 @@ const analyseCheckpoint = async(browser, url, checkpointId = -1) => {
 
   let id = checkpointId === -1 ? await memory.saveCheckpoint(page, []) : checkpointId;
 
-  await page.screenshot({path: `./results/${id}.png`});
+  await utils.takeScreenshot(page, 'mutation', id);
   await detectCheckpointTriggersById(page, id);
   await generateCheckpointEvents(browser, page, id);
 

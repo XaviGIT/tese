@@ -96,7 +96,7 @@ class Memory {
   }
 
   saveToFile = () => {
-    files.storeData(this.memory, './results/data.json');
+    files.saveAnalysis(this.memory);
   }
 
   getCheckpointsNotTested = () => {
