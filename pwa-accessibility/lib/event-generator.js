@@ -4,7 +4,7 @@ const memory = require('./checkpoint-memory');
 const detector = require('./interactions-detector');
 const utils = require('./utils');
 
-const triggerEvent = async (page, elem) => {
+const getTriggerMeasures = async(page, trigger) => {
   const measures = await page.evaluate(async (entry) => {
     const element = document
       .evaluate(entry.xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
@@ -13,20 +13,40 @@ const triggerEvent = async (page, elem) => {
     element.scrollIntoView();
     const { x, y, width, height } = element.getBoundingClientRect();
 
-    // const overlay = document.createElement('div');
-    // overlay.id = 'pwaAnalysisOverlay';
-    // overlay.style.cssText = `
-    //   display: block;
-    //   position: fixed;
-    //   left: ${x}px;
-    //   top: ${y}px;
-    //   width: ${width}px;
-    //   height: ${height}px;
-    //   background-color: red;
-    //   opacity: 0.2;
-    // `;
-    // document.body.appendChild(overlay);
+    return `${x},${y},${width},${height},${element.offsetTop}`;
+  }, trigger);
 
+  // console.log(measures);
+  return measures;
+}
+
+const printTrigger = async(page, measures) => {
+  await page.evaluate(async(m) => {
+    const overlay = document.createElement('div');
+    overlay.id = 'pwaAnalysisOverlay';
+    overlay.style.cssText = `
+      display: block;
+      position: fixed;
+      left: ${m.x}px;
+      top: ${m.y}px;
+      width: ${m.width}px;
+      height: ${m.height}px;
+      background-color: red;
+      opacity: 0.2;
+    `;
+    document.body.appendChild(overlay);
+  }, measures);
+
+  await utils.takeScreenshot(page, 'trigger', Date.now());
+
+  await page.evaluate(() => {
+    const overlay = document.getElementById('pwaAnalysisOverlay');
+    overlay.parentNode.removeChild(overlay);
+  });
+}
+
+const setMutationsObserver = async(page) => {
+  await page.evaluate(() => {
     const nodesToText = (arr) => {
       const result = [];
       if (arr) {
@@ -45,21 +65,25 @@ const triggerEvent = async (page, elem) => {
       });
     });
     observer.observe(document.querySelector('body'), config);
+  })
+}
 
-    return `${x},${y},${width},${height},${element.offsetTop}`;
-  }, elem);
-
-  // await utils.takeScreenshot(page, 'trigger', Date.now());
-
-  // await page.evaluate(() => {
-  //   const overlay = document.getElementById('pwaAnalysisOverlay');
-  //   overlay.parentNode.removeChild(overlay);
-  // });
-
+const triggerEvent = async (page, elem) => {
+  const measures = await getTriggerMeasures(page, elem);
   const measuresArr = measures.split(',');
+
+  const x = measuresArr[0];
+  const y = measuresArr[1];
+  const width = measuresArr[2];
+  const height = measuresArr[3];
+
+  await printTrigger(page, {x, y, width, height});
+
+  await setMutationsObserver(page);
+
   // we're targeting the middle of the trigger
-  const mouseX = parseInt(measuresArr[0]) + (parseInt(measuresArr[2]) / 2);
-  const mouseY = parseInt(measuresArr[1]) + (parseInt(measuresArr[3]) / 2);
+  const mouseX = parseInt(x) + (parseInt(width) / 2);
+  const mouseY = parseInt(y) + (parseInt(height) / 2);
   await page.mouse.click(mouseX, mouseY);
   // element.click();
 };

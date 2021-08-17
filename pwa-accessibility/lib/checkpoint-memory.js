@@ -123,13 +123,12 @@ class Memory {
 
   hasSimilarCheckpoint = async(id) => {
     const digest = new DigestHashBuilder().withHash(id).build();
-    const hasSimilar = await Object.keys(this.memory).some(otherId => {
-        const other = this.memory[otherId];
-        return digest !== other.digest &&
-        this.areCheckpointsSimilar(digest, other.digest)
-      });
 
-    return hasSimilar;
+    return await Object.keys(this.memory).some(otherId => {
+      const other = this.memory[otherId];
+      return digest !== other.digest &&
+      this.areCheckpointsSimilar(digest, other.digest)
+    });
   }
 
   areCheckpointsSimilar = (digest1, digest2) => {

@@ -42,19 +42,19 @@ const PAGE_URL = process.argv[2];
   const browser = await puppeteer.launch(NON_HEADLESS_CONFIG);
 
   await analyseCheckpoint(browser, PAGE_URL);
-  // await browser.close();
+  await browser.close();
 
   console.timeEnd('full run');
   beep(1);
+
 })();
 
 const analyseCheckpoint = async(browser, url, checkpointId = -1) => {
   const page = await browser.newPage();
 
-  // console.time('add event listeners');
   const preload = fs.readFileSync(__dirname+'/lib/preload.js', 'utf8');
   page.evaluateOnNewDocument(preload);
-  // console.timeEnd('add event listeners');
+
   await page.goto(url, { waitUntil: 'networkidle2' });
 
   let id = checkpointId === -1 ? await memory.saveCheckpoint(page, []) : checkpointId;
